@@ -1,7 +1,19 @@
-## Review Handoff Manifest
-- 작업 완료 Agent: android-review-agent
-- 리뷰 결과: Rejected (1차 리뷰)
-- 검증된 파일 목록:
+# Review Handoff Manifest
+
+- **completed_agent:** android-review-agent
+- **pipeline_id:** `tastepick-skill-validation-20260326`
+- **session_id:** `review-001`
+- **parent_session_id:** `orch-004`
+- **run_mode:** `skill-pipeline-validation`
+- **review_cycle:** 0
+- **session_context_path:** `docs/generated/session-context.md`
+- **previous_handoff:** `docs/generated/handoff-manifest.md`
+- **review_result:** DONE_WITH_CONCERNS (1차 리뷰)
+- **verified_files:**
+  - `docs/generated/session-context.md`
+  - `docs/generated/document-reviewer-handoff.md`
+  - `docs/generated/guide-generator-handoff.md`
+  - `docs/generated/handoff-manifest.md`
   - `app/src/main/java/com/example/tastepick/MainActivity.kt`
   - `app/src/main/java/com/example/tastepick/domain/RecommendationScorer.kt`
   - `app/src/main/java/com/example/tastepick/domain/GetRecommendationsUseCase.kt`
@@ -10,11 +22,19 @@
   - `app/src/test/java/com/example/tastepick/domain/KotlinRecommendationScorerTest.kt`
   - `app/src/test/java/com/example/tastepick/domain/GetRecommendationsUseCaseTest.kt`
   - `app/src/test/java/com/example/tastepick/ui/HomeViewModelTest.kt`
-- 발견된 이슈 수: Critical 2 / Warning 2 / Info 0
-- 테스트 커버리지 확인: Fail
-- 보안 체크리스트 확인: Pass
-- 미해결 이슈:
-  - 온보딩/설정/최근 추천 이력 미구현
-  - 피드백 저장 및 후속 추천 반영 미구현
-  - instrumentation test 미실행
-  - AGP 8.5.2 + compileSdk 35 경고 존재
+- **issue_counts:** Critical: 0 / Warning: 1 / Info: 4
+- **decision_summary:** validation mode 기준에서 handoff 계약, generated 문서 경로, representative path 빌드/테스트 증거는 모두 충족되며, 제품 기능 공백은 `DECLARED_GAP`로 분류된다.
+- **issue_classification_counts:**
+  - `CONTEXT_BREAK`: 0건
+  - `SCOPE_BLOCKER`: 0건
+  - `DECLARED_GAP`: 5건
+  - `FOLLOW_UP`: 1건
+- **next_loop_required_actions:** `없음`
+- **evidence_paths:**
+  - `docs/generated/orchestrator-handoff.md`
+  - `docs/generated/session-context.md`
+  - `app/build/reports/tests/testDebugUnitTest/index.html`
+  - `app/build/outputs/apk/debug/app-debug.apk`
+- **test_coverage_status:** Pass
+- **security_checklist_status:** Pass
+- **unresolved_issues:** 온보딩/설정/최근 추천 이력/영속 피드백 저장/ instrumentation test 실행은 validation scope 밖의 `DECLARED_GAP`, AGP 8.5.2 + compileSdk 35 경고는 `FOLLOW_UP`

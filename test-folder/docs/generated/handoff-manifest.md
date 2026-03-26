@@ -1,7 +1,19 @@
-## Handoff Manifest
-- 작업 완료 Agent: android-implementation-agent
-- 실행 방식: 실제 Android scaffold + recommendation stub 구현
-- 생성/수정된 파일 목록:
+# Handoff Manifest
+
+- **completed_agent:** android-implementation-agent
+- **pipeline_id:** `tastepick-skill-validation-20260326`
+- **session_id:** `impl-001`
+- **parent_session_id:** `orch-003`
+- **run_mode:** `skill-pipeline-validation`
+- **review_cycle:** 0
+- **session_context_path:** `docs/generated/session-context.md`
+- **previous_handoff:** `docs/generated/guide-generator-handoff.md`
+- **implemented_scope:** 실제 Android scaffold + recommendation stub + representative unit test/build path
+- **declared_gaps:** 온보딩, 설정, 최근 추천 이력, 영속 피드백 저장, instrumentation test 실행
+- **in_scope:** `settings.gradle.kts`, Gradle scaffold, scorer/usecase/viewmodel, JVM unit test, debug assemble
+- **out_of_scope:** 제품 완성도 기능, Android instrumentation 증거
+- **decision_summary:** validation mode 기준으로 최소 Android scaffold와 추천 로직 representative path를 구현하고 실행 증거를 handoff에 남겼다.
+- **changed_files:**
   - `settings.gradle.kts`
   - `build.gradle.kts`
   - `gradle.properties`
@@ -19,17 +31,21 @@
   - `app/src/test/java/com/example/tastepick/domain/GetRecommendationsUseCaseTest.kt`
   - `app/src/test/java/com/example/tastepick/ui/HomeViewModelTest.kt`
   - `app/src/androidTest/java/com/example/tastepick/ui/MainActivityTest.kt`
-- 테스트 실행 결과:
-  - `./gradlew testDebugUnitTest` 성공
+- **test_results:**
+  - `JAVA_HOME='/Applications/Android Studio.app/Contents/jbr/Contents/Home' ./gradlew testDebugUnitTest` 성공
   - 총 3개 JVM unit test 통과 / 0 실패
   - 리포트: `app/build/reports/tests/testDebugUnitTest/index.html`
-- 테스트 커버리지: 측정 안 함
-- 빌드 결과:
-  - `./gradlew assembleDebug` 성공
-  - 산출물: `app/build/outputs/apk/debug/app-debug.apk`
-- 다음 Agent에게 전달할 핵심 컨텍스트:
-  - `docs/PRD.md`, `docs/TRD.md`, `docs/generated/design-intent.md`, `docs/generated/code-quality-guide.md`를 기준으로 최소 Android scaffold와 추천 로직 stub을 구현함
-  - 알레르기 필터 우선, MVVM 상태 노출, UI 계층의 scorer 직접 호출 금지 규칙은 반영됨
-- 주의 사항 또는 미해결 이슈:
-  - 온보딩, 설정, 최근 추천 이력, 영속 피드백 저장은 아직 미구현
-  - Compose instrumentation test 파일은 존재하지만 실행하지 않음
+- **test_coverage:** validation mode에서 측정 안 함
+- **resolved_issue_counts:**
+  - `CONTEXT_BREAK`: 0건
+  - `SCOPE_BLOCKER`: 0건
+  - `DECLARED_GAP`: 5건
+  - `FOLLOW_UP`: 1건
+- **evidence_paths:**
+  - `app/build/reports/tests/testDebugUnitTest/index.html`
+  - `app/build/outputs/apk/debug/app-debug.apk`
+- **next_agent_context:** `docs/PRD.md`, `docs/TRD.md`, `docs/generated/design-intent.md`, `docs/generated/code-quality-guide.md` 기준 representative path 구현과 실행 증거를 남겼다.
+- **next_agent_required_actions:**
+  - `CONTEXT_BREAK` 또는 `SCOPE_BLOCKER`가 있는지 우선 판정
+  - `DECLARED_GAP`는 validation mode에서 자동 Reject 사유로 승격하지 않음
+- **unresolved_issues:** AGP 8.5.2 + compileSdk 35 경고가 출력되지만 representative path 빌드/테스트는 성공

@@ -20,18 +20,20 @@ description: "[Android App Development] 리뷰 전담 Agent가 설계 의도 문
 *   따라서 `skill-pipeline-validation` 모드에서는, Handoff Manifest에 명시된 검증 범위를 넘어선 제품 전체 미구현만으로는 자동 Reject 하지 않습니다.
 
 ## 🔁 파이프라인 위치 (Pipeline Position)
-이 Agent는 표준 순서 `document-review -> guide-generator -> implementation -> review`의 **네 번째 단계**입니다.
+이 Agent는 표준 순서 `pipeline-orchestrator -> document-review -> guide-generator -> implementation -> review`에서 **네 번째 worker 단계**입니다.
 
-*   **upstream:** `implementation`
-*   **downstream:** 종료 또는 `implementation` 재진입 루프
+*   **upstream:** `pipeline-orchestrator`가 `handoff-manifest`를 읽고 dispatch
+*   **downstream:** 종료 또는 `implementation` 재진입 루프를 결정하는 주체는 `pipeline-orchestrator`
+*   **시작 조건:** `docs/generated/handoff-manifest.md`가 존재하고 orchestrator가 리뷰 단계가 필요하다고 판단했을 때 시작
 
 ## 🔗 공통 세션 전달 규약 (Shared Session Transfer Contract)
 이 Agent는 리뷰 시작 전 `docs/generated/session-context.md`를 읽고, 리뷰 종료 후 동일 파일에 이번 판정을 append 해야 합니다.
 세부 필드와 루프 원칙은 프로젝트 루트의 `agent-session-contract.md`를 기준으로 맞춥니다.
 
-*   **필수 읽기:** `session-context.md`, 가장 최근 `handoff-manifest.md`, 필요 시 이전 `review-handoff-manifest.md`
+*   **필수 읽기:** 가장 최근 `docs/generated/orchestrator-handoff.md`, `session-context.md`, 가장 최근 `handoff-manifest.md`, 필요 시 이전 `review-handoff-manifest.md`
 *   **필수 쓰기:** `session_id`, `parent_session_id`, `review_cycle`, `previous_handoff`, 분류된 이슈 목록 요약, 다음 루프에서 반드시 해결해야 하는 이슈 목록, 증거 경로
 *   **목적:** 다음 구현 Agent가 "왜 반려되었는지"를 대화 로그에 의존하지 않고 구조적으로 이어받게 합니다.
+*   **시작 원칙:** 기본적으로 worker Agent는 직접 시작하지 않으며, `pipeline-orchestrator-agent`의 dispatch 또는 명시적 수동 디버깅 지시가 있을 때만 시작합니다.
 
 ## 🧩 이슈 분류 체계 (Issue Classification Model)
 리뷰 Agent는 발견한 모든 이슈를 아래 클래스 중 하나로 분류해야 합니다.
@@ -46,6 +48,7 @@ description: "[Android App Development] 리뷰 전담 Agent가 설계 의도 문
 리뷰 전담 에이전트는 다음 순서대로 리뷰를 진행해야 합니다.
 
 ### 1단계: 평가 기준 로드 및 선택적 컨텍스트 참고 (Standards Sync) 🔗
+*   **최신 dispatch 확인:** `docs/generated/orchestrator-handoff.md`를 읽어 orchestrator가 현재 리뷰 진입을 어떤 이유로 결정했는지 먼저 확인합니다.
 *   **필수 세션 컨텍스트 로드:** `docs/generated/session-context.md`에서 현재 `run_mode`, `review_cycle`, 직전 구현 범위, 미구현 선언 범위를 확인합니다.
 *   **이전 handoff 추적:** `session-context.md`의 `previous_handoff`와 `latest_handoff`를 확인해 어느 루프에서 어떤 이유로 넘어왔는지 먼저 파악합니다.
 *   **선택적 컨텍스트 참고:** `docs/generated/context-snapshot.md`가 존재하면 참고할 수 있지만, 필수 입력은 아닙니다.
@@ -99,7 +102,7 @@ description: "[Android App Development] 리뷰 전담 Agent가 설계 의도 문
 - **carry_forward_rules:** [`CONTEXT_BREAK`와 `SCOPE_BLOCKER`만 다음 루프 필수 수정 대상으로 유지]
 ```
 
-*   만약 코드가 가이드상의 **모든 체크리스트 조항을 무사히 통과**했다면, 리뷰 승인(Approve) 문구와 함께 검증 완료 리포트를 출력하여 전체 개발 파이프라인을 종료합니다.
+*   만약 코드가 가이드상의 **모든 체크리스트 조항을 무사히 통과**했다면, 리뷰 승인(Approve) 문구와 함께 검증 완료 리포트를 출력하고 orchestrator가 파이프라인 종료를 선언할 수 있게 합니다.
 *   `Rejected` 판정은 `CONTEXT_BREAK` 또는 `SCOPE_BLOCKER`가 하나 이상 남아 있을 때만 사용합니다.
 *   `DECLARED_GAP`와 `FOLLOW_UP`만 남아 있는 경우, `skill-pipeline-validation` 모드에서는 Reject 대신 `DONE_WITH_CONCERNS` 또는 Approve-with-concerns 성격의 결과를 사용할 수 있습니다.
 
@@ -113,28 +116,28 @@ description: "[Android App Development] 리뷰 전담 Agent가 설계 의도 문
 ## 📦 Handoff Manifest (완료 시 출력 포맷)
 ```markdown
 ## Review Handoff Manifest
-- **작업 완료 Agent:** android-review-agent
+- **completed_agent:** android-review-agent
 - **pipeline_id:** [값]
 - **session_id:** [값]
 - **parent_session_id:** [이전 session_id]
-- **실행 모드:** `project-delivery` | `skill-pipeline-validation`
+- **run_mode:** `project-delivery` | `skill-pipeline-validation`
 - **review_cycle:** [현재 루프 번호]
 - **session_context_path:** `docs/generated/session-context.md`
 - **previous_handoff:** `docs/generated/handoff-manifest.md`
-- **리뷰 결과:** Approved / Rejected (N차 리뷰)
-- **검증된 파일 목록:** [파일 경로 리스트]
-- **발견된 이슈 수:** Critical: N / Warning: N / Info: N
+- **review_result:** Approved / DONE_WITH_CONCERNS / Rejected (N차 리뷰)
+- **verified_files:** [파일 경로 리스트]
+- **issue_counts:** Critical: N / Warning: N / Info: N
 - **decision_summary:** [이번 리뷰 판정 핵심 이유]
-- **이슈 분류 요약:**
+- **issue_classification_counts:**
   - `CONTEXT_BREAK`: N건
   - `SCOPE_BLOCKER`: N건
   - `DECLARED_GAP`: N건
   - `FOLLOW_UP`: N건
-- **다음 루프 필수 수정 항목:** [`CONTEXT_BREAK` + `SCOPE_BLOCKER` 목록]
+- **next_loop_required_actions:** [`CONTEXT_BREAK` + `SCOPE_BLOCKER` 목록]
 - **evidence_paths:** [리뷰 근거 파일, 테스트 리포트, 로그 경로]
-- **테스트 커버리지 확인:** Pass / Fail
-- **보안 체크리스트 확인:** Pass / Fail
-- **미해결 이슈:** [내용 또는 "없음"]
+- **test_coverage_status:** Pass / Fail
+- **security_checklist_status:** Pass / Fail
+- **unresolved_issues:** [내용 또는 "없음"]
 ```
 
 ## ⛑️ 에러 처리 (Error Handling)

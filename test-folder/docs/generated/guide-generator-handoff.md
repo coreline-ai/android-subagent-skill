@@ -1,12 +1,28 @@
-## Handoff Manifest
-- 작업 완료 Agent: android-code-quality-guide-generator
-- 생성된 문서 목록:
+# Handoff Manifest
+
+- **completed_agent:** android-code-quality-guide-generator
+- **pipeline_id:** `tastepick-skill-validation-20260326`
+- **session_id:** `guide-gen-001`
+- **parent_session_id:** `orch-002`
+- **run_mode:** `skill-pipeline-validation`
+- **review_cycle:** 0
+- **session_context_path:** `docs/generated/session-context.md`
+- **previous_handoff:** `docs/generated/document-reviewer-handoff.md`
+- **generated_artifacts:**
   - `docs/generated/design-intent.md`
   - `docs/generated/code-quality-guide.md`
-- 다음 Agent에게 전달할 핵심 컨텍스트:
-  - 추천 앱의 기본 상태 패턴은 MVVM
-  - 오프라인 추천과 알레르기 필터 우선이 핵심 설계 원칙
-  - scorer 구현은 Kotlin으로 시작하고 NDK로 교체 가능한 구조 유지
-- 주의 사항 또는 미해결 이슈:
+- **in_scope:** implementation/review가 공통으로 읽을 최소 기준 문서 생성
+- **out_of_scope:** delivery-mode 완성도 기준 강제
+- **decision_summary:** 오프라인 추천, MVVM 기본, 알레르기 필터 우선, NDK optional 구조를 공통 설계/품질 기준으로 고정했다.
+- **evidence_paths:**
+  - `docs/PRD.md`
+  - `docs/TRD.md`
+  - `docs/generated/design-intent.md`
+  - `docs/generated/code-quality-guide.md`
+- **next_agent_context:** 오프라인 추천, MVVM 기본, 알레르기 필터 우선, NDK optional 구조를 유지한 representative path 구현 필요
+- **next_agent_required_actions:**
+  - `docs/generated/design-intent.md`와 `docs/generated/code-quality-guide.md`를 먼저 로드
+  - representative path 구현과 빌드/테스트 증거를 handoff에 포함
+- **unresolved_issues:**
   - 실제 앱 코드와 테스트 코드는 아직 생성되지 않음
-  - implementation 단계에서는 추천 결과 0건 UX를 반드시 구현해야 함
+  - implementation 단계에서는 validation scope와 declared gaps를 명시해야 함

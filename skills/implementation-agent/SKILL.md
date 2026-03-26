@@ -17,18 +17,20 @@ description: "[Android App Development] 구현 전담 Agent가 PRD, TRD, code-qu
     *   이 모드에서는 미구현 범위를 Handoff Manifest에 명시하면 전체 PRD 미구현 자체만으로는 실패로 간주하지 않습니다.
 
 ## 🔁 파이프라인 위치 (Pipeline Position)
-이 Agent는 표준 순서 `document-review -> guide-generator -> implementation -> review`의 **세 번째 단계**입니다.
+이 Agent는 표준 순서 `pipeline-orchestrator -> document-review -> guide-generator -> implementation -> review`에서 **세 번째 worker 단계**입니다.
 
-*   **upstream:** `guide-generator` 또는 `review` 재진입 루프
-*   **downstream:** `review`
+*   **upstream:** `pipeline-orchestrator`가 `guide-generator-handoff` 또는 `review-handoff-manifest`를 읽고 dispatch
+*   **downstream:** worker 관점에서 다음 단계는 `review`이지만, 실제 dispatch 결정은 `pipeline-orchestrator`가 수행
+*   **시작 조건:** `docs/generated/guide-generator-handoff.md`가 존재하거나, `docs/generated/review-handoff-manifest.md`에 `Rejected`가 기록되어 orchestrator가 재구현 루프를 시작할 때 시작
 
 ## 🔗 공통 세션 전달 규약 (Shared Session Transfer Contract)
 이 Agent는 구현 시작 전과 구현 완료 후에 모두 `docs/generated/session-context.md`를 읽고 갱신해야 합니다.
 세부 필드와 루프 원칙은 프로젝트 루트의 `agent-session-contract.md`를 기준으로 맞춥니다.
 
-*   **읽기 필수:** 가장 최근 `session-context.md`, `guide-generator` handoff, 그리고 리뷰가 있었다면 가장 최근 `review-handoff-manifest.md`
+*   **읽기 필수:** 가장 최근 `docs/generated/orchestrator-handoff.md`, `session-context.md`, `guide-generator` handoff, 그리고 리뷰가 있었다면 가장 최근 `review-handoff-manifest.md`
 *   **쓰기 필수:** 현재 루프 번호, 현재 session_id, `previous_handoff`, 구현 범위, 의도적 미구현 범위, 해결한 이슈, 남은 이슈, 다음 Agent 필수 실행 항목
 *   **원칙:** 리뷰에서 내려온 이슈는 "무엇을 고쳤는가" 뿐 아니라 "왜 안 고쳤는가"까지 구조적으로 다시 전달되어야 합니다.
+*   **시작 원칙:** 기본적으로 worker Agent는 직접 시작하지 않으며, `pipeline-orchestrator-agent`의 dispatch 또는 명시적 수동 디버깅 지시가 있을 때만 시작합니다.
 
 ## 🧩 이슈 분류 체계 (Issue Classification Model)
 리뷰 Agent가 전달한 이슈는 반드시 아래 클래스 중 하나로 분류되어야 합니다.
@@ -43,6 +45,7 @@ description: "[Android App Development] 구현 전담 Agent가 PRD, TRD, code-qu
 구현 전담 에이전트는 다음 순서대로 코딩을 진행해야 합니다.
 
 ### 1단계: 구현 컨텍스트 파악 및 선택적 컨텍스트 참고 (Context Loading) 🔗
+*   **최신 dispatch 확인:** `docs/generated/orchestrator-handoff.md`를 읽어 orchestrator가 신규 구현인지 재구현 루프인지 먼저 확인합니다.
 *   **필수 세션 컨텍스트 로드:** `docs/generated/session-context.md`를 먼저 읽어 현재 `run_mode`, `review_cycle`, 이전 Agent의 범위 선언을 확인합니다.
 *   **이전 handoff 추적:** `session-context.md`의 `previous_handoff`와 `latest_handoff`를 따라 가장 최근 upstream 판단을 확인하고, 로컬 메모리에만 의존하지 않습니다.
 *   **선택적 컨텍스트 참고:** `docs/generated/context-snapshot.md`가 존재하면 참고할 수 있지만, 필수 입력은 아닙니다.
@@ -106,38 +109,38 @@ description: "[Android App Development] 구현 전담 Agent가 PRD, TRD, code-qu
 ### 5단계: 자체 검증 및 Handoff (Self-Check & Delegate)
 *   기능 구현이 완료되면 PR을 생성하거나 코드 작성을 마무리하기 전, 자신이 작성한 코드가 `code-quality-guide.md` 체크리스트를 모두 만족하는지 **1차 자체 리뷰(Self-validation)**를 진행합니다.
 *   리뷰 루프 재진입인 경우, 이전 `review-handoff-manifest.md`의 `CONTEXT_BREAK`와 `SCOPE_BLOCKER`가 실제로 해결되었는지 먼저 체크합니다.
-*   자체 기준을 통과했다면 아래 **Handoff Manifest**를 작성하여 다음 단계인 **리뷰 전담 Agent**에게 제어권을 넘깁니다.
+*   자체 기준을 통과했다면 아래 **Handoff Manifest**를 작성하여, `pipeline-orchestrator-agent`가 다음 worker인 **리뷰 전담 Agent**를 dispatch 할 수 있게 합니다.
 
 ## 📦 Handoff Manifest (리뷰 Agent로 인계 시 필수 포맷)
 구현 완료 후, 아래 형식의 `handoff-manifest.md`를 프로젝트 `docs/generated/` 경로에 생성하여 리뷰 Agent가 즉시 리뷰에 착수할 수 있도록 합니다.
 ```markdown
 ## Handoff Manifest
-- **작업 완료 Agent:** android-implementation-agent
+- **completed_agent:** android-implementation-agent
 - **pipeline_id:** [값]
 - **session_id:** [값]
 - **parent_session_id:** [이전 session_id]
-- **실행 모드:** `project-delivery` | `skill-pipeline-validation`
+- **run_mode:** `project-delivery` | `skill-pipeline-validation`
 - **review_cycle:** [현재 루프 번호]
 - **session_context_path:** `docs/generated/session-context.md`
 - **previous_handoff:** [`docs/generated/guide-generator-handoff.md` 또는 `docs/generated/review-handoff-manifest.md`]
-- **구현 범위:** [이번 실행에서 실제로 구현한 범위]
-- **의도적으로 미구현한 범위:** [검증 모드라면 남겨둔 범위]
+- **implemented_scope:** [이번 실행에서 실제로 구현한 범위]
+- **declared_gaps:** [검증 모드라면 남겨둔 범위]
 - **decision_summary:** [구현 핵심 판단 및 제외 근거]
-- **생성/수정된 파일 목록:**
+- **changed_files:**
   - `app/src/main/java/com/example/...`
   - `app/src/main/cpp/...`
   - `app/src/test/java/com/example/...`
-- **테스트 실행 결과:** 전체 N건 통과 / N건 실패
-- **테스트 커버리지:** 비즈니스 로직 XX%, NDK XX%
-- **해결한 이슈 분류 요약:**
+- **test_results:** 전체 N건 통과 / N건 실패
+- **test_coverage:** 비즈니스 로직 XX%, NDK XX%
+- **resolved_issue_counts:**
   - `CONTEXT_BREAK`: N건
   - `SCOPE_BLOCKER`: N건
   - `DECLARED_GAP`: N건
   - `FOLLOW_UP`: N건
 - **evidence_paths:** [성공한 명령, 테스트 리포트, APK/로그 경로]
-- **다음 Agent에게 전달할 핵심 컨텍스트:** [구현 요약]
-- **다음 Agent 필수 실행 항목:** [review-agent가 재검증해야 할 `CONTEXT_BREAK`/`SCOPE_BLOCKER` 해결 항목]
-- **주의 사항 또는 미해결 이슈:** [내용]
+- **next_agent_context:** [구현 요약]
+- **next_agent_required_actions:** [review-agent가 재검증해야 할 `CONTEXT_BREAK`/`SCOPE_BLOCKER` 해결 항목]
+- **unresolved_issues:** [내용]
 ```
 
 ## ⛑️ 에러 처리 (Error Handling)

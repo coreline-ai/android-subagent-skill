@@ -1,14 +1,29 @@
-## Handoff Manifest
-- 작업 완료 Agent: android-document-reviewer-agent
-- 교정/수정 완료된 문서 목록:
+# Handoff Manifest
+
+- **completed_agent:** android-document-reviewer-agent
+- **pipeline_id:** `tastepick-skill-validation-20260326`
+- **session_id:** `doc-review-001`
+- **parent_session_id:** `orch-001`
+- **run_mode:** `skill-pipeline-validation`
+- **review_cycle:** 0
+- **session_context_path:** `docs/generated/session-context.md`
+- **previous_handoff:** `docs/generated/orchestrator-handoff.md`
+- **updated_documents:**
   - `docs/PRD.md` - 추천 범위, 사용자 시나리오, 필수 기능, 비목표, 제약 조건 정리
   - `docs/TRD.md` - MVVM 구조, 데이터 모델, 추천 처리 순서, NDK 적용 범위 정리
-- 발견 및 교정한 불일치 항목 수: 3건
-- 컨텍스트 스냅샷 경로(선택): `docs/generated/context-snapshot.md`
-- 다음 Agent에게 전달할 핵심 컨텍스트:
-  - MVP는 오프라인 음식 추천 앱
-  - 상태 관리는 MVVM 기본
-  - 추천 엔진은 Kotlin 시작, NDK 교체 가능 구조
-- 주의 사항 또는 미해결 이슈:
+- **corrected_inconsistency_count:** 3건
+- **in_scope:** PRD/TRD 정합성 교정, generated 경로 계약 명시
+- **out_of_scope:** 제품 기능 추가 설계
+- **decision_summary:** MVP는 오프라인 음식 추천 앱, 상태 관리는 MVVM 기본, 추천 엔진은 Kotlin 시작 후 NDK 교체 가능 구조로 정리했다.
+- **evidence_paths:**
+  - `docs/PRD.md`
+  - `docs/TRD.md`
+  - `docs/generated/context-snapshot.md`
+- **context_snapshot_path:** `docs/generated/context-snapshot.md`
+- **next_agent_context:** MVP는 오프라인 음식 추천 앱, 상태 관리는 MVVM 기본, 추천 엔진은 Kotlin 시작 후 NDK 교체 가능 구조
+- **next_agent_required_actions:**
+  - `docs/generated/session-context.md`와 본 handoff를 먼저 로드
+  - `docs/generated/design-intent.md`, `docs/generated/code-quality-guide.md`를 `docs/generated/`에 생성
+- **unresolved_issues:**
   - 메뉴 seed 데이터의 초기 개수는 아직 확정되지 않음
   - 추천 이유 문구 생성 방식은 템플릿 기반으로 시작 권장

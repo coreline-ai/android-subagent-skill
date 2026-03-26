@@ -18,25 +18,29 @@ description: "[Android App Development] 안드로이드 최초 기획 문서(PRD
 *   **`skill-pipeline-validation`:** `test-folder`, `fixture`, `example`, `demo` 같은 검증용 경로에서는 **다음 Agent가 문서를 정상 소비할 수 있는지 검증하는 최소/일관된 문서 세트**를 만드는 것을 우선합니다. 이 모드에서는 제품 스코프를 불필요하게 확장하지 않습니다.
 
 ## 🔁 파이프라인 위치 (Pipeline Position)
-이 Agent는 표준 순서 `document-review -> guide-generator -> implementation -> review`의 **첫 단계**입니다.
+이 Agent는 표준 순서 `pipeline-orchestrator -> document-review -> guide-generator -> implementation -> review`에서 **첫 번째 worker 단계**입니다.
 
-*   **upstream:** 없음
-*   **downstream:** `guide-generator`
+*   **upstream:** `pipeline-orchestrator`
+*   **downstream:** worker 관점에서 다음 단계는 `guide-generator`이지만, 실제 dispatch 결정은 `pipeline-orchestrator`가 수행
+*   **시작 조건:** 새 세션에서 `docs/generated/session-context.md`가 아직 없고 orchestrator가 최초 문서 교정이 필요하다고 판단했을 때 시작
 
 ## 🔗 공통 세션 전달 규약 (Shared Session Transfer Contract)
 모든 Agent는 공통적으로 `docs/generated/session-context.md` 와 각 단계의 Handoff Manifest를 통해 문맥을 전달해야 합니다.
 세부 필드와 루프 원칙은 프로젝트 루트의 `agent-session-contract.md`를 기준으로 합니다.
 
-*   **`session-context.md`는 필수:** 파이프라인 전체의 실행 모드, 세션 ID, 현재 단계, in-scope/out-of-scope, 미해결 이슈, 다음 Agent 주의사항을 누적 기록합니다.
+*   **`session-context.md`는 worker 체인 시작 후 필수:** 파이프라인 전체의 실행 모드, 세션 ID, 현재 단계, in-scope/out-of-scope, 미해결 이슈, 다음 Agent 주의사항을 누적 기록합니다.
+*   **새 세션 첫 진입 예외:** `document-review`는 첫 worker일 수 있으므로, 최초 진입에서는 `docs/generated/orchestrator-handoff.md`를 먼저 읽고 이후 `session-context.md`를 생성합니다.
 *   **Handoff Manifest는 단계별 계약서:** 현재 Agent의 산출물, 실행 범위, 다음 Agent가 실제로 처리해야 할 항목을 구조화해 전달합니다.
 *   **필수 필드:** `pipeline_id`, `session_id`, `parent_session_id`, `run_mode`, `review_cycle`, `session_context_path`, `previous_handoff`, `decision_summary`, `evidence_paths`, `next_agent_required_actions`
 *   **루프 공통 원칙:** 이후 리뷰 단계에서 반려가 발생하더라도, 다음 Agent는 `session-context.md`와 가장 최근 Handoff Manifest를 기준으로 현재 루프 상태를 이어받아야 합니다.
+*   **시작 원칙:** 기본적으로 worker Agent는 직접 시작하지 않으며, `pipeline-orchestrator-agent`의 dispatch 또는 명시적 수동 디버깅 지시가 있을 때만 시작합니다.
 
 ## 📋 프로세스 (Workflow)
 
 메인 에이전트는 기획 단계에서 다음의 주요 절차를 수행해야 합니다.
 
 ### 1단계: 최초 입력 문서 일괄 로딩 및 분석 (Initial Review)
+*   **최초 dispatch 확인:** `docs/generated/orchestrator-handoff.md`가 존재하면 먼저 읽어 orchestrator가 어떤 실행 모드와 범위로 시작시켰는지 확인합니다.
 *   **문서 수집:** 프로젝트의 `docs/` 폴더에 위치한 모든 최초 문서들(예: `docs/PRD.md`, `docs/TRD.md`, 요구사항 기술서 등)을 빠짐없이 읽어들입니다.
 *   **초기 의도 파악:** 클라이언트 혹은 기획자가 의도한 서비스의 핵심 목적, 비즈니스 가치, 그리고 주요 기능 스코프를 분석합니다.
 
@@ -50,7 +54,7 @@ description: "[Android App Development] 안드로이드 최초 기획 문서(PRD
 *   **검증 모드 제한:** `skill-pipeline-validation` 모드에서는 실제 제품 전체를 완성하기 위한 과도한 요구사항 확장보다, 후속 Agent가 구현/리뷰 계약을 오해 없이 이어받을 수 있는 수준의 정합성과 명확성을 우선합니다.
 
 ### 4단계: 세션 컨텍스트 초기화 및 선택적 스냅샷 기록 (Session Bootstrap) 🔗
-파이프라인의 첫 번째 Agent이므로 `docs/generated/session-context.md`를 **반드시 생성**하여 세션을 시작합니다.
+worker 체인의 첫 번째 Agent이므로 `docs/generated/session-context.md`를 **반드시 생성**하여 세션을 시작합니다.
 추가로 문서 교정 과정의 세부 판단을 자세히 남기고 싶다면 `docs/generated/context-snapshot.md`를 보조 기록으로 생성할 수 있습니다.
 
 ```markdown
@@ -60,8 +64,8 @@ description: "[Android App Development] 안드로이드 최초 기획 문서(PRD
 - **current_stage:** `document-review`
 - **review_cycle:** 0
 - **session_id:** `doc-review-001`
-- **parent_session_id:** `none`
-- **previous_handoff:** `none`
+- **parent_session_id:** [orchestrator session_id]
+- **previous_handoff:** `docs/generated/orchestrator-handoff.md`
 - **in_scope:** [이번 실행 범위]
 - **out_of_scope:** [이번 실행에서 제외한 범위]
 - **decision_summary:** [문서 교정 핵심 판단 요약]
@@ -88,31 +92,31 @@ description: "[Android App Development] 안드로이드 최초 기획 문서(PRD
 ```
 
 ### 5단계: 다음 파이프라인으로 제어권 위임 (Handoff)
-*   모든 구조화 및 정합성 교정 작업이 완료되면 아래 **Handoff Manifest**를 작성하여 **'코드 품질 가이드 생성 에이전트'**에게 제어권을 넘깁니다.
+*   모든 구조화 및 정합성 교정 작업이 완료되면 아래 **Handoff Manifest**를 작성하여, `pipeline-orchestrator-agent`가 다음 worker인 **'코드 품질 가이드 생성 에이전트'**를 dispatch 할 수 있게 합니다.
 
 ## 📦 Handoff Manifest (가이드 생성 Agent로 인계 시 필수 포맷)
 ```markdown
 ## Handoff Manifest
-- **작업 완료 Agent:** android-document-reviewer-agent
+- **completed_agent:** android-document-reviewer-agent
 - **pipeline_id:** [값]
 - **session_id:** [값]
-- **parent_session_id:** `none`
-- **실행 모드:** `project-delivery` | `skill-pipeline-validation`
+- **parent_session_id:** [orchestrator session_id]
+- **run_mode:** `project-delivery` | `skill-pipeline-validation`
 - **review_cycle:** 0
 - **session_context_path:** `docs/generated/session-context.md`
-- **previous_handoff:** `none`
-- **교정/수정 완료된 문서 목록:**
+- **previous_handoff:** `docs/generated/orchestrator-handoff.md`
+- **updated_documents:**
   - `docs/PRD.md` (변경 사항 요약)
   - `docs/TRD.md` (변경 사항 요약)
-- **발견 및 교정한 불일치 항목 수:** N건
+- **corrected_inconsistency_count:** N건
 - **in_scope:** [이번 실행 범위]
 - **out_of_scope:** [이번 실행에서 제외한 범위]
 - **decision_summary:** [문서 교정 핵심 판단 요약]
 - **evidence_paths:** [`docs/PRD.md`, `docs/TRD.md`]
-- **컨텍스트 스냅샷 경로(선택):** `docs/generated/context-snapshot.md`
-- **다음 Agent에게 전달할 핵심 컨텍스트:** [교정 완료 요약]
-- **다음 Agent 필수 실행 항목:** [`docs/generated/session-context.md`와 본 handoff를 먼저 로드]
-- **주의 사항 또는 미해결 이슈:** [내용]
+- **context_snapshot_path:** `docs/generated/context-snapshot.md`
+- **next_agent_context:** [교정 완료 요약]
+- **next_agent_required_actions:** [`docs/generated/session-context.md`와 본 handoff를 먼저 로드]
+- **unresolved_issues:** [내용]
 ```
 
 ## ⛑️ 에러 처리 (Error Handling)

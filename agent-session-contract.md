@@ -8,6 +8,7 @@
 - 리뷰 반려가 발생해도 3회 루프 안에서 동일한 세션 체인을 유지하게 한다.
 
 ## 표준 파일 경로
+- `docs/generated/orchestrator-handoff.md`
 - `docs/generated/session-context.md`
 - `docs/generated/document-reviewer-handoff.md`
 - `docs/generated/guide-generator-handoff.md`
@@ -18,19 +19,29 @@
 ## 표준 파이프라인 순서
 `agent-workflow-base`의 기본 실행 순서는 아래와 같다.
 
-1. `document-review`
-2. `guide-generator`
-3. `implementation`
-4. `review`
+1. `pipeline-orchestrator`
+2. `document-review`
+3. `guide-generator`
+4. `implementation`
+5. `review`
 
 각 Agent는 자신의 upstream/downstream을 이 순서 기준으로 해석해야 한다.
 
-- `document-review`의 다음 단계는 `guide-generator`
-- `guide-generator`의 다음 단계는 `implementation`
-- `implementation`의 다음 단계는 `review`
-- `review`에서 `Rejected`가 발생하면 `implementation`으로 되돌아가고, 이후 `implementation -> review` 루프를 최대 3회 반복한다.
+- `pipeline-orchestrator`는 유일한 시작점이며, 각 단계 종료 후 다음 worker를 dispatch 한다.
+- `document-review`의 다음 worker 단계는 `guide-generator`
+- `guide-generator`의 다음 worker 단계는 `implementation`
+- `implementation`의 다음 worker 단계는 `review`
+- `review`에서 `Rejected`가 발생하면 orchestrator가 `implementation`으로 되돌리고, 이후 `implementation -> review` worker 루프를 최대 3회 반복한다.
+
+## 시작 시점 규칙
+- 새 실행은 기본적으로 `pipeline-orchestrator`에서만 시작한다.
+- `docs/generated/session-context.md`가 없고 `docs/PRD.md`, `docs/TRD.md`가 있으면 orchestrator는 새 세션을 시작하고 `document-review`를 첫 worker로 dispatch 한다.
+- 새 실행의 첫 worker는 `session-context.md`가 아직 없을 수 있으므로, `docs/generated/orchestrator-handoff.md`를 최초 dispatch 근거로 읽어야 한다.
+- `session-context.md`와 최신 handoff가 이미 있으면 orchestrator는 해당 상태를 읽고 다음 worker를 결정한다.
+- worker Agent는 기본적으로 **직접 시작점이 아니다.** 명시적인 수동 디버깅 상황이 아니라면 orchestrator의 dispatch 없이 시작하지 않는다.
 
 ## session-context.md 필수 필드
+아래 키는 모두 **lowercase `snake_case`** 로 고정한다. 한국어 라벨이나 공백이 포함된 키는 parser 대상 필드에 사용하지 않는다.
 - `pipeline_id`
 - `run_mode`
 - `current_stage`
@@ -49,6 +60,7 @@
 - `carry_forward_rules`
 
 ## Handoff Manifest 필수 필드
+아래 키는 모두 **lowercase `snake_case`** 로 고정한다. 사람을 위한 설명은 값이나 본문 prose에 남기고, 키 이름 자체는 바꾸지 않는다.
 - `pipeline_id`
 - `session_id`
 - `parent_session_id`
@@ -69,6 +81,7 @@
 3. 자신의 판단을 요약한 `decision_summary`와 증거 경로 `evidence_paths`를 남긴다.
 4. 다음 Agent가 반드시 처리해야 할 항목은 `next_agent_required_actions`에 구조적으로 기록한다.
 5. 선택적 참고 자료인 `context-snapshot.md`는 있어도 좋지만, 필수 계약은 항상 `session-context.md`와 handoff에 둔다.
+6. worker Agent는 handoff를 작성한 뒤 다음 worker를 직접 호출하지 않고, orchestrator가 해당 handoff를 읽어 다음 단계를 dispatch 하게 한다.
 
 ## 리뷰 루프 규칙
 - `Rejected`는 `CONTEXT_BREAK` 또는 `SCOPE_BLOCKER`가 남아 있을 때만 사용한다.
@@ -76,6 +89,7 @@
 - 루프는 최대 3회까지 자동 진행한다.
 - 2회차 이상에서는 `next_agent_required_actions`에 적힌 항목만 필수 수정 대상으로 승격한다.
 - 3회차 이후에도 `CONTEXT_BREAK` 또는 `SCOPE_BLOCKER`가 남으면 자동 루프를 중단하고 사용자에게 에스컬레이션한다.
+- `review_cycle` 증가는 orchestrator가 `Rejected` 리뷰를 해석하고 다음 `implementation` 루프를 시작할 때 수행한다.
 
 ## 운영 모드 해석
 - `project-delivery`: PRD/TRD 기준의 실제 제품 구현과 품질 완결성을 목표로 한다.

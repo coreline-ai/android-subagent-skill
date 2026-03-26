@@ -18,24 +18,27 @@ description: "[Android App Development] sub-agent가 안드로이드 앱의 PRD,
 *   **`skill-pipeline-validation`:** 스킬 파이프라인 자체를 검증하는 상황에서는, **다음 Agent가 구현 및 리뷰 계약을 테스트할 수 있을 만큼 충분한 최소 기준**을 생성합니다. 이 모드에서는 제품 전체 출시 기준표를 무조건 전부 강제하지 않습니다.
 
 ## 🔁 파이프라인 위치 (Pipeline Position)
-이 Agent는 표준 순서 `document-review -> guide-generator -> implementation -> review`의 **두 번째 단계**입니다.
+이 Agent는 표준 순서 `pipeline-orchestrator -> document-review -> guide-generator -> implementation -> review`에서 **두 번째 worker 단계**입니다.
 
-*   **upstream:** `document-review`
-*   **downstream:** `implementation`
+*   **upstream:** `pipeline-orchestrator`가 `document-reviewer-handoff`를 읽고 dispatch
+*   **downstream:** worker 관점에서 다음 단계는 `implementation`이지만, 실제 dispatch 결정은 `pipeline-orchestrator`가 수행
+*   **시작 조건:** `docs/generated/document-reviewer-handoff.md`가 존재하고 orchestrator가 설계 의도/품질 기준 생성이 필요하다고 판단했을 때 시작
 
 ## 🔗 공통 세션 전달 규약 (Shared Session Transfer Contract)
 이 Agent는 반드시 `docs/generated/session-context.md`와 이전 Handoff Manifest를 읽고, 자신의 판단을 다시 `session-context.md`에 append 해야 합니다.
 세부 필드와 루프 원칙은 프로젝트 루트의 `agent-session-contract.md`를 기준으로 맞춥니다.
 
-*   **읽기 필수:** `docs/generated/session-context.md`
+*   **읽기 필수:** `docs/generated/orchestrator-handoff.md`(있다면), `docs/generated/session-context.md`
 *   **갱신 필수 항목:** `current_stage`, `session_id`, `parent_session_id`, `previous_handoff`, `latest_handoff`, `decision_summary`, `unresolved_issues`, `next_agent_focus`, `evidence_paths`
 *   **목적:** 다음 Agent가 "무엇을 만들었는지" 뿐 아니라 "왜 그런 판단을 했는지"와 "현재 루프가 몇 차인지"를 잃지 않게 합니다.
+*   **시작 원칙:** 기본적으로 worker Agent는 직접 시작하지 않으며, `pipeline-orchestrator-agent`의 dispatch 또는 명시적 수동 디버깅 지시가 있을 때만 시작합니다.
 
 ## 📋 프로세스 (Workflow)
 
 에이전트는 이 스킬을 호출받았을 때 다음 순서대로 작업을 수행해야 합니다.
 
 ### 1단계: 문서 수집 및 선택적 컨텍스트 참고 (Context Gathering) 🔗
+*   **최신 dispatch 확인:** `docs/generated/orchestrator-handoff.md`가 존재하면 먼저 읽어 orchestrator가 현재 어떤 worker 단계로 보냈는지 확인합니다.
 *   **필수 세션 컨텍스트 로드:** `docs/generated/session-context.md`를 먼저 읽어 이전 Agent의 실행 모드와 범위를 확인합니다.
 *   **선택적 컨텍스트 참고:** `docs/generated/context-snapshot.md`가 존재하면 참고할 수 있지만, 필수 입력은 아닙니다.
 *   **분석 대상 읽기:** 프로젝트의 `docs/PRD.md`, `docs/TRD.md`, `code-convention.md`, `adr.md`를 `view_file` 툴을 통해 각각 읽어옵니다.
@@ -89,29 +92,29 @@ description: "[Android App Development] sub-agent가 안드로이드 앱의 PRD,
 
 ### 5단계: 리뷰 Agent 연계 체계 수립 (Handoff to Review Agent)
 최종 완성된 두 산출물(`docs/generated/design-intent.md`, `docs/generated/code-quality-guide.md`)을 향후 호출될 **리뷰 Agent**가 어떻게 활용할지 컨텍스트를 제공합니다.
-*   리뷰 Agent에게 프롬프트/메시지를 넘길 때, "작성된 설계 의도 문서의 요구사항이 코드에 전부 반영되었는지", "품질 가이드의 체크리스트를 모두 통과하는지"를 우선적으로 검증하라고 지침을 추가합니다.
+*   실제 다음 dispatch는 `pipeline-orchestrator-agent`가 수행하며, orchestrator가 이후 worker인 `implementation-agent`를 시작할 수 있게 handoff를 남깁니다.
 
 ## 📦 Handoff Manifest (구현 Agent로 인계 시 필수 포맷)
 ```markdown
 ## Handoff Manifest
-- **작업 완료 Agent:** android-code-quality-guide-generator
+- **completed_agent:** android-code-quality-guide-generator
 - **pipeline_id:** [값]
 - **session_id:** [값]
 - **parent_session_id:** [이전 session_id]
-- **실행 모드:** `project-delivery` | `skill-pipeline-validation`
+- **run_mode:** `project-delivery` | `skill-pipeline-validation`
 - **review_cycle:** [현재 값]
 - **session_context_path:** `docs/generated/session-context.md`
 - **previous_handoff:** `docs/generated/document-reviewer-handoff.md`
-- **생성된 문서 목록:**
+- **generated_artifacts:**
   - `docs/generated/design-intent.md`
   - `docs/generated/code-quality-guide.md`
 - **in_scope:** [이번 실행 범위]
 - **out_of_scope:** [이번 실행에서 제외한 범위]
 - **decision_summary:** [설계 의도 및 품질 기준 생성 핵심 판단]
 - **evidence_paths:** [`docs/PRD.md`, `docs/TRD.md`, `code-convention.md`, `adr.md`]
-- **다음 Agent에게 전달할 핵심 컨텍스트:** [설계 의도 및 품질 기준 요약]
-- **다음 Agent 필수 실행 항목:** [`docs/generated/session-context.md`, `docs/generated/design-intent.md`, `docs/generated/code-quality-guide.md`를 먼저 로드]
-- **주의 사항 또는 미해결 이슈:** [내용]
+- **next_agent_context:** [설계 의도 및 품질 기준 요약]
+- **next_agent_required_actions:** [`docs/generated/session-context.md`, `docs/generated/design-intent.md`, `docs/generated/code-quality-guide.md`를 먼저 로드]
+- **unresolved_issues:** [내용]
 ```
 
 ## 💡 실행 시 주의사항
