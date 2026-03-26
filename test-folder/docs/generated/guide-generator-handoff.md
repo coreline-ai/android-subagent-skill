@@ -1,0 +1,12 @@
+## Handoff Manifest
+- 작업 완료 Agent: android-code-quality-guide-generator
+- 생성된 문서 목록:
+  - `docs/generated/design-intent.md`
+  - `docs/generated/code-quality-guide.md`
+- 다음 Agent에게 전달할 핵심 컨텍스트:
+  - 추천 앱의 기본 상태 패턴은 MVVM
+  - 오프라인 추천과 알레르기 필터 우선이 핵심 설계 원칙
+  - scorer 구현은 Kotlin으로 시작하고 NDK로 교체 가능한 구조 유지
+- 주의 사항 또는 미해결 이슈:
+  - 실제 앱 코드와 테스트 코드는 아직 생성되지 않음
+  - implementation 단계에서는 추천 결과 0건 UX를 반드시 구현해야 함

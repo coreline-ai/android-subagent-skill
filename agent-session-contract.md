@@ -1,0 +1,82 @@
+# Agent Session Contract
+
+`agent-workflow-base`의 모든 Agent는 개별 대화 로그가 아니라 **공통 세션 문서와 Handoff Manifest**를 통해 문맥을 전달해야 한다.
+
+## 목적
+- 이전 Agent의 실행 모드, 범위, 판단 근거, 미해결 이슈를 다음 Agent가 대화 로그 없이 이어받게 한다.
+- `project-delivery`와 `skill-pipeline-validation`을 구분해 같은 리뷰/구현 루프라도 서로 다른 판정 기준을 적용하게 한다.
+- 리뷰 반려가 발생해도 3회 루프 안에서 동일한 세션 체인을 유지하게 한다.
+
+## 표준 파일 경로
+- `docs/generated/session-context.md`
+- `docs/generated/document-reviewer-handoff.md`
+- `docs/generated/guide-generator-handoff.md`
+- `docs/generated/handoff-manifest.md`
+- `docs/generated/review-handoff-manifest.md`
+- `docs/generated/context-snapshot.md` (선택)
+
+## 표준 파이프라인 순서
+`agent-workflow-base`의 기본 실행 순서는 아래와 같다.
+
+1. `document-review`
+2. `guide-generator`
+3. `implementation`
+4. `review`
+
+각 Agent는 자신의 upstream/downstream을 이 순서 기준으로 해석해야 한다.
+
+- `document-review`의 다음 단계는 `guide-generator`
+- `guide-generator`의 다음 단계는 `implementation`
+- `implementation`의 다음 단계는 `review`
+- `review`에서 `Rejected`가 발생하면 `implementation`으로 되돌아가고, 이후 `implementation -> review` 루프를 최대 3회 반복한다.
+
+## session-context.md 필수 필드
+- `pipeline_id`
+- `run_mode`
+- `current_stage`
+- `review_cycle`
+- `session_id`
+- `parent_session_id`
+- `previous_handoff`
+- `latest_handoff`
+- `in_scope`
+- `out_of_scope`
+- `decision_summary`
+- `resolved_issues`
+- `unresolved_issues`
+- `next_agent_focus`
+- `evidence_paths`
+- `carry_forward_rules`
+
+## Handoff Manifest 필수 필드
+- `pipeline_id`
+- `session_id`
+- `parent_session_id`
+- `run_mode`
+- `review_cycle`
+- `session_context_path`
+- `previous_handoff`
+- `in_scope`
+- `out_of_scope`
+- `decision_summary`
+- `evidence_paths`
+- `next_agent_required_actions`
+- `unresolved_issues`
+
+## Agent 공통 동작 규칙
+1. 작업 시작 전 `docs/generated/session-context.md`와 가장 최근 upstream handoff를 반드시 읽는다.
+2. 작업 종료 후 `session-context.md`를 overwrite 하지 않고 append 한다.
+3. 자신의 판단을 요약한 `decision_summary`와 증거 경로 `evidence_paths`를 남긴다.
+4. 다음 Agent가 반드시 처리해야 할 항목은 `next_agent_required_actions`에 구조적으로 기록한다.
+5. 선택적 참고 자료인 `context-snapshot.md`는 있어도 좋지만, 필수 계약은 항상 `session-context.md`와 handoff에 둔다.
+
+## 리뷰 루프 규칙
+- `Rejected`는 `CONTEXT_BREAK` 또는 `SCOPE_BLOCKER`가 남아 있을 때만 사용한다.
+- `DECLARED_GAP`와 `FOLLOW_UP`는 기본적으로 기록만 하고 자동 Reject 사유로 승격하지 않는다.
+- 루프는 최대 3회까지 자동 진행한다.
+- 2회차 이상에서는 `next_agent_required_actions`에 적힌 항목만 필수 수정 대상으로 승격한다.
+- 3회차 이후에도 `CONTEXT_BREAK` 또는 `SCOPE_BLOCKER`가 남으면 자동 루프를 중단하고 사용자에게 에스컬레이션한다.
+
+## 운영 모드 해석
+- `project-delivery`: PRD/TRD 기준의 실제 제품 구현과 품질 완결성을 목표로 한다.
+- `skill-pipeline-validation`: 파이프라인 계약, 문맥 전달, representative path, 빌드/테스트 증거를 검증한다. 전체 PRD 미구현만으로 자동 실패시키지 않는다.

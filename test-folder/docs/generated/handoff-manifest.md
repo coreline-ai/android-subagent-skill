@@ -1,0 +1,35 @@
+## Handoff Manifest
+- 작업 완료 Agent: android-implementation-agent
+- 실행 방식: 실제 Android scaffold + recommendation stub 구현
+- 생성/수정된 파일 목록:
+  - `settings.gradle.kts`
+  - `build.gradle.kts`
+  - `gradle.properties`
+  - `gradlew`
+  - `app/build.gradle.kts`
+  - `app/src/main/java/com/example/tastepick/MainActivity.kt`
+  - `app/src/main/java/com/example/tastepick/data/SampleMenuRepository.kt`
+  - `app/src/main/java/com/example/tastepick/domain/RecommendationModels.kt`
+  - `app/src/main/java/com/example/tastepick/domain/RecommendationScorer.kt`
+  - `app/src/main/java/com/example/tastepick/domain/GetRecommendationsUseCase.kt`
+  - `app/src/main/java/com/example/tastepick/ui/HomeUiState.kt`
+  - `app/src/main/java/com/example/tastepick/ui/HomeViewModel.kt`
+  - `app/src/main/java/com/example/tastepick/ui/TastePickApp.kt`
+  - `app/src/test/java/com/example/tastepick/domain/KotlinRecommendationScorerTest.kt`
+  - `app/src/test/java/com/example/tastepick/domain/GetRecommendationsUseCaseTest.kt`
+  - `app/src/test/java/com/example/tastepick/ui/HomeViewModelTest.kt`
+  - `app/src/androidTest/java/com/example/tastepick/ui/MainActivityTest.kt`
+- 테스트 실행 결과:
+  - `./gradlew testDebugUnitTest` 성공
+  - 총 3개 JVM unit test 통과 / 0 실패
+  - 리포트: `app/build/reports/tests/testDebugUnitTest/index.html`
+- 테스트 커버리지: 측정 안 함
+- 빌드 결과:
+  - `./gradlew assembleDebug` 성공
+  - 산출물: `app/build/outputs/apk/debug/app-debug.apk`
+- 다음 Agent에게 전달할 핵심 컨텍스트:
+  - `docs/PRD.md`, `docs/TRD.md`, `docs/generated/design-intent.md`, `docs/generated/code-quality-guide.md`를 기준으로 최소 Android scaffold와 추천 로직 stub을 구현함
+  - 알레르기 필터 우선, MVVM 상태 노출, UI 계층의 scorer 직접 호출 금지 규칙은 반영됨
+- 주의 사항 또는 미해결 이슈:
+  - 온보딩, 설정, 최근 추천 이력, 영속 피드백 저장은 아직 미구현
+  - Compose instrumentation test 파일은 존재하지만 실행하지 않음

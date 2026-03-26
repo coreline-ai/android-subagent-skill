@@ -1,0 +1,14 @@
+.DS_Store
+.idea/
+*.iml
+
+# Android / Gradle local state
+.gradle/
+local.properties
+**/.gradle/
+**/build/
+captures/
+.cxx/
+
+# Logs
+*.log

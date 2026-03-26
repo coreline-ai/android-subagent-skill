@@ -1,0 +1,20 @@
+## Review Handoff Manifest
+- 작업 완료 Agent: android-review-agent
+- 리뷰 결과: Rejected (1차 리뷰)
+- 검증된 파일 목록:
+  - `app/src/main/java/com/example/tastepick/MainActivity.kt`
+  - `app/src/main/java/com/example/tastepick/domain/RecommendationScorer.kt`
+  - `app/src/main/java/com/example/tastepick/domain/GetRecommendationsUseCase.kt`
+  - `app/src/main/java/com/example/tastepick/ui/HomeViewModel.kt`
+  - `app/src/main/java/com/example/tastepick/ui/TastePickApp.kt`
+  - `app/src/test/java/com/example/tastepick/domain/KotlinRecommendationScorerTest.kt`
+  - `app/src/test/java/com/example/tastepick/domain/GetRecommendationsUseCaseTest.kt`
+  - `app/src/test/java/com/example/tastepick/ui/HomeViewModelTest.kt`
+- 발견된 이슈 수: Critical 2 / Warning 2 / Info 0
+- 테스트 커버리지 확인: Fail
+- 보안 체크리스트 확인: Pass
+- 미해결 이슈:
+  - 온보딩/설정/최근 추천 이력 미구현
+  - 피드백 저장 및 후속 추천 반영 미구현
+  - instrumentation test 미실행
+  - AGP 8.5.2 + compileSdk 35 경고 존재
