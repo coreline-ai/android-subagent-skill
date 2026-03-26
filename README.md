@@ -47,7 +47,17 @@ flowchart LR
     E -- Rejected --> D
 ```
 
-Core loop rules:
+### Documents used in each stage
+
+| Stage | Main inputs | Main outputs |
+| --- | --- | --- |
+| `pipeline-orchestrator` | `docs/PRD.md`, `docs/TRD.md`, `docs/generated/session-context.md`, latest handoff, [`agent-session-contract.md`](./agent-session-contract.md) | `docs/generated/orchestrator-handoff.md` |
+| `document-review` | `docs/generated/orchestrator-handoff.md`, `docs/PRD.md`, `docs/TRD.md`, [`agent-session-contract.md`](./agent-session-contract.md) | `docs/generated/document-reviewer-handoff.md`, `docs/generated/context-snapshot.md` |
+| `guide-generator` | `docs/generated/session-context.md`, `docs/generated/document-reviewer-handoff.md`, [`adr.md`](./adr.md), [`code-convention.md`](./code-convention.md), [`agent-session-contract.md`](./agent-session-contract.md) | `docs/generated/design-intent.md`, `docs/generated/code-quality-guide.md`, `docs/generated/guide-generator-handoff.md` |
+| `implementation` | `docs/generated/session-context.md`, `docs/generated/guide-generator-handoff.md`, `docs/generated/design-intent.md`, `docs/generated/code-quality-guide.md`, [`adr.md`](./adr.md), [`code-convention.md`](./code-convention.md) | `docs/generated/handoff-manifest.md` |
+| `review` | `docs/generated/session-context.md`, `docs/generated/handoff-manifest.md`, `docs/generated/design-intent.md`, `docs/generated/code-quality-guide.md`, [`agent-session-contract.md`](./agent-session-contract.md) | `docs/generated/review-report.md`, `docs/generated/review-handoff-manifest.md` |
+
+### Core loop rules
 
 - standard order is `pipeline-orchestrator -> document-review -> guide-generator -> implementation -> review`
 - `Rejected` returns control to `implementation`
