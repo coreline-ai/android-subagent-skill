@@ -139,10 +139,10 @@ The pipeline uses three naming systems. The canonical mapping lives in [`agent_r
 
 | Classification | Meaning | Blocks approval? |
 | --- | --- | :---: |
-| `CONTEXT_BREAK` | Contract/context integrity failure | ✅ Yes |
-| `SCOPE_BLOCKER` | Critical scope requirement not met | ✅ Yes |
-| `DECLARED_GAP` | Known gap explicitly declared by implementation agent | ❌ No (validation mode) |
-| `FOLLOW_UP` | Minor item for future attention | ❌ No |
+| `CONTEXT_BREAK` | handoff 필수 키 누락, session 경로 불일치 등 계약/문맥 자체가 깨진 경우 | ✅ Yes |
+| `SCOPE_BLOCKER` | 대표 경로 빌드 불가, 핵심 테스트 실패 등 필수 요구사항 미충족 | ✅ Yes |
+| `DECLARED_GAP` | 구현 에이전트가 handoff manifest의 `declared_gaps`에 미구현 사유와 함께 명시적으로 선언한 항목. validation 모드에서는 선언 자체가 계약 이행으로 인정됨 | ❌ No |
+| `FOLLOW_UP` | deprecation 경고, 버전 권고 등 계약·기능에 영향 없는 참고 사항. 다음 스프린트에서 처리 가능 | ❌ No |
 
 - **Terminal results:** `APPROVED`, `DONE_WITH_CONCERNS`, `REJECTED`
   - `REJECTED` triggers re-implementation loop (max 3 cycles)
@@ -287,7 +287,6 @@ The harness is intentionally small — it validates skill contracts, not applica
 | Canonical manifest keys with 3-way naming registry | ✅ |
 | Validation harness with `completed_agent` verification | ✅ |
 | Shared session contract | ✅ |
-| Real runtime agent executor | ⬜ Not included |
 
 ## 📄 License
 
