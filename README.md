@@ -13,7 +13,7 @@
 `android-subagent-skill` is a lightweight agent workflow base for Android projects.
 It defines how specialized agents share context, hand off work, loop on review, and validate the pipeline with a minimal local harness.
 
-## Why this exists
+## 💡 Why this exists
 
 Most agent workflows break when the next agent cannot reconstruct context.
 This repository fixes that by making the contract explicit:
@@ -23,33 +23,34 @@ This repository fixes that by making the contract explicit:
 - one orchestrator controls start timing and review loops
 - validation mode proves the skill chain works before using it on a real project
 
-## What you get
+## 📦 What you get
 
 - 1 orchestrator skill + 4 worker skills, each with its own `SKILL.md`
 - a shared session contract ([`agent-session-contract.md`](./skills/pipeline-orchestrator-agent/agent-session-contract.md))
 - a canonical agent registry with stage/folder/agent-name mapping ([`agent_registry.py`](./harness/agent_registry.py))
 - a minimal Python harness for contract validation ([`harness/`](./harness))
 
-## Pipeline at a glance
+## 🔀 Pipeline flow
 
-```mermaid
-flowchart LR
-    A[pipeline-orchestrator] --> B[document-review]
-    B --> C[guide-generation]
-    C --> D[implementation]
-    D --> E[review]
-    E -- Approved / DONE_WITH_CONCERNS --> F[stop]
-    E -- Rejected --> D
-```
+> `pipeline-orchestrator` → `document-review` → `guide-generation` → `implementation` → `review`
 
-### Core loop rules
+| # | Stage | Direction | Condition |
+| :---: | --- | :---: | --- |
+| 1 | `pipeline-orchestrator` | ➡️ | Always starts here — dispatches first worker |
+| 2 | `document-review` | ➡️ | Normalize PRD/TRD for downstream |
+| 3 | `guide-generation` | ➡️ | Produce design intent + quality rubric |
+| 4 | `implementation` | ➡️ | Write code and tests |
+| 5 | `review` | ✅ / 🔄 | `APPROVED` or `DONE_WITH_CONCERNS` → **stop** |
+| | | | `REJECTED` → **back to step 4** (max 3 cycles) |
 
-- standard order: `pipeline-orchestrator` → `document-review` → `guide-generation` → `implementation` → `review`
-- `Rejected` returns control to `implementation`
-- orchestrator allows up to 3 automatic review loops
+### 📏 Core loop rules
+
+- `Rejected` returns control to `implementation` via orchestrator re-dispatch
+- orchestrator allows up to **3 automatic review loops**
 - `skill-pipeline-validation` does not fail only because the full PRD is not implemented
+- `DONE_WITH_CONCERNS` requires `CONTEXT_BREAK = 0` and `SCOPE_BLOCKER = 0`
 
-## Operating modes
+## ⚙️ Operating modes
 
 Every skill supports two modes, declared in its `SKILL.md` frontmatter:
 
@@ -58,9 +59,9 @@ Every skill supports two modes, declared in its `SKILL.md` frontmatter:
 | `project-delivery` | Build the actual product from PRD/TRD | Reviews against product completeness and quality expectations |
 | `skill-pipeline-validation` | Validate the agent chain, handoff quality, and representative evidence | Reviews contract integrity, session continuity, and proof of execution |
 
-## Skills
+## 🧩 Skills
 
-### Naming system
+### 🏷️ Naming system
 
 The pipeline uses three naming systems. The canonical mapping lives in [`agent_registry.py`](./harness/agent_registry.py) and is used by the validation harness to verify `completed_agent` in every handoff manifest.
 
@@ -72,7 +73,7 @@ The pipeline uses three naming systems. The canonical mapping lives in [`agent_r
 | `implementation` | `implementation-agent` | `android-implementation-agent` |
 | `review` | `review-agent` | `android-review-agent` |
 
-### pipeline-orchestrator-agent
+### 🎛️ pipeline-orchestrator-agent
 
 **Role:** Control-plane agent — the single entry point and dispatcher for the entire pipeline.
 
@@ -87,7 +88,7 @@ The pipeline uses three naming systems. The canonical mapping lives in [`agent_r
   - On `APPROVED` or `DONE_WITH_CONCERNS`: dispatches `stop`
   - Resumes from the exact stage if the session was interrupted
 
-### document-reviewer-agent
+### 📋 document-reviewer-agent
 
 **Role:** First worker — normalizes and refines PRD/TRD documents for downstream consumption.
 
@@ -100,7 +101,7 @@ The pipeline uses three naming systems. The canonical mapping lives in [`agent_r
   - Produces a corrected, AI-friendly document set for downstream agents
   - In `skill-pipeline-validation`, produces minimal consistent docs rather than expanding scope
 
-### code-quality-guide-generator
+### 📐 code-quality-guide-generator
 
 **Role:** Second worker — produces design intent and code quality standards from refined documents.
 
@@ -113,7 +114,7 @@ The pipeline uses three naming systems. The canonical mapping lives in [`agent_r
   - Synthesizes PRD/TRD + ADR + code conventions into architecture design intent
   - Generates a quality rubric that the review agent uses as its scoring baseline
 
-### implementation-agent
+### 🛠️ implementation-agent
 
 **Role:** Third worker — writes production code and tests based on design intent and quality guide.
 
@@ -126,7 +127,7 @@ The pipeline uses three naming systems. The canonical mapping lives in [`agent_r
   - Records `changed_files`, `test_results`, `test_coverage`, `declared_gaps`
   - In `skill-pipeline-validation`, builds a representative path (minimal scaffold + unit tests) rather than full PRD scope
 
-### review-agent
+### 🔍 review-agent
 
 **Role:** Fourth worker — classifies issues and decides approval status.
 
@@ -135,15 +136,19 @@ The pipeline uses three naming systems. The canonical mapping lives in [`agent_r
 - **Downstream:** `stop` or `implementation` re-entry (via orchestrator dispatch)
 - **Output:** `docs/generated/review-report.md`, `docs/generated/review-handoff-manifest.md`
 - **Issue classification system:**
-  - `CONTEXT_BREAK` — contract/context integrity failure (blocks approval)
-  - `SCOPE_BLOCKER` — critical scope requirement not met (blocks approval)
-  - `DECLARED_GAP` — known gap explicitly declared by implementation agent (does not block in validation mode)
-  - `FOLLOW_UP` — minor item for future attention (does not block)
+
+| Classification | Meaning | Blocks approval? |
+| --- | --- | :---: |
+| `CONTEXT_BREAK` | Contract/context integrity failure | ✅ Yes |
+| `SCOPE_BLOCKER` | Critical scope requirement not met | ✅ Yes |
+| `DECLARED_GAP` | Known gap explicitly declared by implementation agent | ❌ No (validation mode) |
+| `FOLLOW_UP` | Minor item for future attention | ❌ No |
+
 - **Terminal results:** `APPROVED`, `DONE_WITH_CONCERNS`, `REJECTED`
   - `REJECTED` triggers re-implementation loop (max 3 cycles)
   - `DONE_WITH_CONCERNS` requires `CONTEXT_BREAK = 0` and `SCOPE_BLOCKER = 0`
 
-## Documents used in each stage
+## 📄 Documents used in each stage
 
 | Stage | Main inputs | Main outputs |
 | --- | --- | --- |
@@ -155,7 +160,7 @@ The pipeline uses three naming systems. The canonical mapping lives in [`agent_r
 
 All generated files are written to `docs/generated/`.
 
-## Repository layout
+## 🗂️ Repository layout
 
 ```text
 .
@@ -184,18 +189,18 @@ All generated files are written to `docs/generated/`.
 └── test-folder/               # reference fixture for validation
 ```
 
-## Session and handoff contract
+## 📜 Session and handoff contract
 
 All parser-facing keys are canonical `snake_case`.
 The shared contract lives in [`agent-session-contract.md`](./skills/pipeline-orchestrator-agent/agent-session-contract.md).
 
-### Design principle
+### 🎯 Design principle
 
 - agents do not rely on chat history
 - agents rely on durable markdown artifacts
 - every handoff manifest includes `completed_agent` validated against the registry
 
-### Handoff manifest required keys (13 common + stage-specific)
+### 🔑 Handoff manifest required keys (13 common + stage-specific)
 
 Common keys shared by all manifests:
 
@@ -203,11 +208,11 @@ Common keys shared by all manifests:
 
 Each stage adds its own required keys (e.g., `dispatch_target` for orchestrator, `review_result` for review). See [`agent_registry.py`](./harness/agent_registry.py) for the full spec per stage.
 
-### Session context required keys (16 per section)
+### 🔑 Session context required keys (16 per section)
 
 `pipeline_id`, `run_mode`, `current_stage`, `review_cycle`, `session_id`, `parent_session_id`, `previous_handoff`, `latest_handoff`, `in_scope`, `out_of_scope`, `decision_summary`, `resolved_issues`, `unresolved_issues`, `next_agent_focus`, `evidence_paths`, `carry_forward_rules`
 
-### Standard generated files
+### 📝 Standard generated files
 
 - `docs/generated/orchestrator-handoff.md`
 - `docs/generated/session-context.md`
@@ -220,7 +225,7 @@ Each stage adds its own required keys (e.g., `dispatch_target` for orchestrator,
 - `docs/generated/review-report.md`
 - `docs/generated/review-handoff-manifest.md`
 
-## Quick start
+## 🚀 Quick start
 
 ### 1. Prepare project docs
 
@@ -242,11 +247,11 @@ It decides:
 python3 -m harness.run_validation --project <your-project-dir>
 ```
 
-## Validation harness
+## 🧪 Validation harness
 
 The harness is intentionally small — it validates skill contracts, not application behavior.
 
-Current scope:
+**Current scope:**
 
 - parse canonical markdown manifests into structured dicts
 - load and validate session context sections
@@ -258,14 +263,14 @@ Current scope:
 - separate build evidence findings from contract findings (`check_build_evidence` flag)
 - return a deterministic pass/fail result
 
-Current non-goals:
+**Non-goals:**
 
 - live LLM orchestration
 - parallel execution
 - deployment automation
 - generalized workflow engine
 
-## Recommended adoption path
+## 📌 Recommended adoption path
 
 1. Copy the `skills/` folder into your Android project.
 2. Create `docs/PRD.md` and `docs/TRD.md`.
@@ -274,14 +279,16 @@ Current non-goals:
 5. Use the harness to validate contract integrity after each pipeline run.
 6. Add stricter delivery rules only after validation mode is stable.
 
-## Current status
+## 📊 Current status
 
-- 5-stage orchestrator-based workflow: implemented
-- canonical manifest keys with 3-way naming registry: implemented
-- validation harness with `completed_agent` verification: implemented
-- shared session contract: implemented
-- real runtime agent executor: not included
+| Component | Status |
+| --- | :---: |
+| 5-stage orchestrator-based workflow | ✅ |
+| Canonical manifest keys with 3-way naming registry | ✅ |
+| Validation harness with `completed_agent` verification | ✅ |
+| Shared session contract | ✅ |
+| Real runtime agent executor | ⬜ Not included |
 
-## License
+## 📄 License
 
 No license file is currently included in this repository.
