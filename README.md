@@ -32,6 +32,7 @@ This repository fixes that by making the contract explicit:
 - a shared session contract ([`agent-session-contract.md`](./skills/pipeline-orchestrator-agent/agent-session-contract.md))
 - a canonical agent registry with stage/folder/agent-name mapping ([`agent_registry.py`](./harness/agent_registry.py))
 - a minimal Python harness for contract validation ([`harness/`](./harness))
+- a PreToolUse hook that blocks pipeline start when `docs/PRD.md` or `docs/TRD.md` is missing ([`.claude/hooks/`](./.claude/hooks))
 
 ## 🔀 Pipeline flow
 
@@ -208,6 +209,10 @@ All generated files are written to `docs/generated/`.
 │   │   └── SKILL.md
 │   └── review-agent/
 │       └── SKILL.md
+├── .claude/
+│   ├── hooks/
+│   │   └── check-pipeline-docs.sh  # PRD/TRD pre-validation hook
+│   └── settings.json
 ├── harness/
 │   ├── __init__.py
 │   ├── agent_registry.py      # canonical naming + manifest specs
@@ -317,6 +322,7 @@ The harness is intentionally small — it validates skill contracts, not applica
 | Canonical manifest keys with 3-way naming registry | ✅ |
 | Validation harness with `completed_agent` verification | ✅ |
 | Shared session contract | ✅ |
+| PreToolUse Hook (PRD/TRD pre-validation) | ✅ |
 
 ## 📄 License
 
