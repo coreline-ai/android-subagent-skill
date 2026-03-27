@@ -46,6 +46,8 @@ WORKER_SEQUENCE = (
 
 TERMINAL_REVIEW_RESULTS = {"APPROVED", "DONE_WITH_CONCERNS"}
 
+MAX_REVIEW_CYCLES = 3
+
 
 @dataclass(frozen=True)
 class ManifestSpec:

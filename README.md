@@ -303,6 +303,7 @@ The harness is intentionally small — it validates skill contracts, not applica
 - parallel execution
 - deployment automation
 - generalized workflow engine
+- evidence content validation (harness checks file existence only, not correctness of content)
 
 ## 📌 Recommended adoption path
 

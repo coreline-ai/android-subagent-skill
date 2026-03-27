@@ -7,6 +7,7 @@ from typing import Any
 
 from .agent_registry import (
     MANIFEST_SPECS,
+    MAX_REVIEW_CYCLES,
     SESSION_REQUIRED_KEYS,
     STAGE_TO_AGENT_NAME,
     STAGE_TO_HANDOFF,
@@ -128,10 +129,16 @@ def validate_project(project_root: Path, *, check_build_evidence: bool = False) 
         for section in session_sections
         if section.get("current_stage") in WORKER_SEQUENCE
     ]
-    if worker_sequence != list(WORKER_SEQUENCE):
+    # Build allowed patterns: base sequence + up to MAX_REVIEW_CYCLES
+    # review loop repetitions (implementation → review).
+    base = list(WORKER_SEQUENCE)
+    loop_pair = ["implementation", "review"]
+    allowed = [base + loop_pair * n for n in range(MAX_REVIEW_CYCLES + 1)]
+    if worker_sequence not in allowed:
         findings.append(
-            "worker stage sequence mismatch: expected "
-            f"{list(WORKER_SEQUENCE)}, got {worker_sequence}"
+            "worker stage sequence mismatch: expected base "
+            f"{base} with up to {MAX_REVIEW_CYCLES} review loops, "
+            f"got {worker_sequence}"
         )
 
     if session_sections:
