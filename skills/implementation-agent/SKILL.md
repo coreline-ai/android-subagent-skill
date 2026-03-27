@@ -17,7 +17,7 @@ description: "[Android App Development] 구현 전담 Agent가 PRD, TRD, code-qu
     *   이 모드에서는 미구현 범위를 Handoff Manifest에 명시하면 전체 PRD 미구현 자체만으로는 실패로 간주하지 않습니다.
 
 ## 🔁 파이프라인 위치 (Pipeline Position)
-이 Agent는 표준 순서 `pipeline-orchestrator -> document-review -> guide-generator -> implementation -> review`에서 **세 번째 worker 단계**입니다.
+이 Agent는 표준 순서 `pipeline-orchestrator -> document-review -> guide-generation -> implementation -> review`에서 **세 번째 worker 단계**입니다.
 
 *   **upstream:** `pipeline-orchestrator`가 `guide-generator-handoff` 또는 `review-handoff-manifest`를 읽고 dispatch
 *   **downstream:** worker 관점에서 다음 단계는 `review`이지만, 실제 dispatch 결정은 `pipeline-orchestrator`가 수행
@@ -25,9 +25,9 @@ description: "[Android App Development] 구현 전담 Agent가 PRD, TRD, code-qu
 
 ## 🔗 공통 세션 전달 규약 (Shared Session Transfer Contract)
 이 Agent는 구현 시작 전과 구현 완료 후에 모두 `docs/generated/session-context.md`를 읽고 갱신해야 합니다.
-세부 필드와 루프 원칙은 프로젝트 루트의 `agent-session-contract.md`를 기준으로 맞춥니다.
+세부 필드와 루프 원칙은 `skills/pipeline-orchestrator-agent/agent-session-contract.md`를 기준으로 맞춥니다.
 
-*   **읽기 필수:** 가장 최근 `docs/generated/orchestrator-handoff.md`, `session-context.md`, `guide-generator` handoff, 그리고 리뷰가 있었다면 가장 최근 `review-handoff-manifest.md`
+*   **읽기 필수:** 가장 최근 `docs/generated/orchestrator-handoff.md`, `session-context.md`, `docs/generated/guide-generator-handoff.md`, 그리고 리뷰가 있었다면 가장 최근 `review-handoff-manifest.md`
 *   **쓰기 필수:** 현재 루프 번호, 현재 session_id, `previous_handoff`, 구현 범위, 의도적 미구현 범위, 해결한 이슈, 남은 이슈, 다음 Agent 필수 실행 항목
 *   **원칙:** 리뷰에서 내려온 이슈는 "무엇을 고쳤는가" 뿐 아니라 "왜 안 고쳤는가"까지 구조적으로 다시 전달되어야 합니다.
 *   **시작 원칙:** 기본적으로 worker Agent는 직접 시작하지 않으며, `pipeline-orchestrator-agent`의 dispatch 또는 명시적 수동 디버깅 지시가 있을 때만 시작합니다.
@@ -125,6 +125,8 @@ description: "[Android App Development] 구현 전담 Agent가 PRD, TRD, code-qu
 - **previous_handoff:** [`docs/generated/guide-generator-handoff.md` 또는 `docs/generated/review-handoff-manifest.md`]
 - **implemented_scope:** [이번 실행에서 실제로 구현한 범위]
 - **declared_gaps:** [검증 모드라면 남겨둔 범위]
+- **in_scope:** [이번 실행의 전체 범위 선언]
+- **out_of_scope:** [이번 실행에서 제외한 범위]
 - **decision_summary:** [구현 핵심 판단 및 제외 근거]
 - **changed_files:**
   - `app/src/main/java/com/example/...`

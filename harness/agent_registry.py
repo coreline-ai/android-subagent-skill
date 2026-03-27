@@ -30,6 +30,8 @@ HANDOFF_REQUIRED_KEYS = (
     "review_cycle",
     "session_context_path",
     "previous_handoff",
+    "in_scope",
+    "out_of_scope",
     "decision_summary",
     "evidence_paths",
     "unresolved_issues",
@@ -50,12 +52,16 @@ class ManifestSpec:
     file_name: str
     required_keys: tuple[str, ...]
     stage: str
+    skill_dir: str
+    agent_name: str
 
 
 MANIFEST_SPECS = {
     "orchestrator": ManifestSpec(
         file_name="orchestrator-handoff.md",
         stage="pipeline-orchestrator",
+        skill_dir="pipeline-orchestrator-agent",
+        agent_name="android-pipeline-orchestrator-agent",
         required_keys=HANDOFF_REQUIRED_KEYS
         + (
             "completed_agent",
@@ -67,6 +73,8 @@ MANIFEST_SPECS = {
     "document_review": ManifestSpec(
         file_name="document-reviewer-handoff.md",
         stage="document-review",
+        skill_dir="document-reviewer-agent",
+        agent_name="android-document-reviewer-agent",
         required_keys=HANDOFF_REQUIRED_KEYS
         + (
             "completed_agent",
@@ -80,6 +88,8 @@ MANIFEST_SPECS = {
     "guide_generation": ManifestSpec(
         file_name="guide-generator-handoff.md",
         stage="guide-generation",
+        skill_dir="code-quality-guide-generator",
+        agent_name="android-code-quality-guide-generator",
         required_keys=HANDOFF_REQUIRED_KEYS
         + (
             "completed_agent",
@@ -91,6 +101,8 @@ MANIFEST_SPECS = {
     "implementation": ManifestSpec(
         file_name="handoff-manifest.md",
         stage="implementation",
+        skill_dir="implementation-agent",
+        agent_name="android-implementation-agent",
         required_keys=HANDOFF_REQUIRED_KEYS
         + (
             "completed_agent",
@@ -107,6 +119,8 @@ MANIFEST_SPECS = {
     "review": ManifestSpec(
         file_name="review-handoff-manifest.md",
         stage="review",
+        skill_dir="review-agent",
+        agent_name="android-review-agent",
         required_keys=HANDOFF_REQUIRED_KEYS
         + (
             "completed_agent",
@@ -114,7 +128,7 @@ MANIFEST_SPECS = {
             "verified_files",
             "issue_counts",
             "issue_classification_counts",
-            "next_loop_required_actions",
+            "next_agent_required_actions",
             "test_coverage_status",
             "security_checklist_status",
         ),
@@ -127,4 +141,8 @@ STAGE_TO_HANDOFF = {
     "implementation": "handoff-manifest.md",
     "review": "review-handoff-manifest.md",
 }
+
+STAGE_TO_SKILL_DIR = {spec.stage: spec.skill_dir for spec in MANIFEST_SPECS.values()}
+
+STAGE_TO_AGENT_NAME = {spec.stage: spec.agent_name for spec in MANIFEST_SPECS.values()}
 

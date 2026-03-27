@@ -18,11 +18,17 @@ def main(argv: list[str] | None = None) -> int:
         default="test-folder",
         help="Project directory relative to the repository root. Default: test-folder",
     )
+    parser.add_argument(
+        "--check-build-evidence",
+        action="store_true",
+        default=False,
+        help="Include build artifact paths (app/build/) in validation. Requires prior Gradle build.",
+    )
     args = parser.parse_args(argv)
 
     repo_root = Path(__file__).resolve().parents[1]
     project_root = (repo_root / args.project).resolve()
-    result = validate_project(project_root)
+    result = validate_project(project_root, check_build_evidence=args.check_build_evidence)
 
     print(f"project_root={project_root}")
     print(f"pipeline_id={result.summary.get('pipeline_id', '')}")
@@ -35,6 +41,16 @@ def main(argv: list[str] | None = None) -> int:
         print("findings:")
         for finding in result.findings:
             print(f"- {finding}")
+
+    if result.build_findings:
+        print(f"build_evidence={'checked' if args.check_build_evidence else 'skipped'} ({len(result.build_findings)} paths not found)")
+        if args.check_build_evidence:
+            for finding in result.build_findings:
+                print(f"- {finding}")
+    else:
+        print("build_evidence=ok")
+
+    if result.findings:
         return 1
 
     print("validation=ok")
@@ -43,4 +59,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

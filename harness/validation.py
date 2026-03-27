@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 import re
 from typing import Any
@@ -8,6 +8,7 @@ from typing import Any
 from .agent_registry import (
     MANIFEST_SPECS,
     SESSION_REQUIRED_KEYS,
+    STAGE_TO_AGENT_NAME,
     STAGE_TO_HANDOFF,
     TERMINAL_REVIEW_RESULTS,
     WORKER_SEQUENCE,
@@ -15,11 +16,15 @@ from .agent_registry import (
 from .manifest_parser import parse_manifest, parse_session_context
 
 
+_BUILD_PATH_PREFIXES = ("app/build/", "build/")
+
+
 @dataclass
 class ValidationResult:
     ok: bool
     findings: list[str]
-    summary: dict[str, Any]
+    build_findings: list[str] = field(default_factory=list)
+    summary: dict[str, Any] = field(default_factory=dict)
 
 
 def _normalize_status(value: str) -> str:
@@ -52,9 +57,29 @@ def _require_keys(target_name: str, data: dict[str, Any], required_keys: tuple[s
             findings.append(f"{target_name}: missing required key '{key}'")
 
 
-def validate_project(project_root: Path) -> ValidationResult:
+def _is_build_path(rel_path: str) -> bool:
+    return any(rel_path.startswith(prefix) for prefix in _BUILD_PATH_PREFIXES)
+
+
+def _check_evidence_paths(
+    label: str,
+    manifest: dict[str, Any],
+    project_root: Path,
+    findings: list[str],
+    build_findings: list[str],
+) -> None:
+    for rel_path in _as_list(manifest.get("evidence_paths")):
+        if not (project_root / rel_path).exists():
+            if _is_build_path(rel_path):
+                build_findings.append(f"{label} build evidence missing: {rel_path}")
+            else:
+                findings.append(f"{label} evidence path missing: {rel_path}")
+
+
+def validate_project(project_root: Path, *, check_build_evidence: bool = False) -> ValidationResult:
     generated_dir = project_root / "docs" / "generated"
     findings: list[str] = []
+    build_findings: list[str] = []
     manifests: dict[str, dict[str, Any]] = {}
 
     for name, spec in MANIFEST_SPECS.items():
@@ -65,6 +90,13 @@ def validate_project(project_root: Path) -> ValidationResult:
         manifest = parse_manifest(path)
         manifests[name] = manifest
         _require_keys(spec.file_name, manifest, spec.required_keys, findings)
+        actual_agent = str(manifest.get("completed_agent", ""))
+        expected_agent = STAGE_TO_AGENT_NAME.get(spec.stage, "")
+        if actual_agent and expected_agent and actual_agent != expected_agent:
+            findings.append(
+                f"{spec.file_name}: completed_agent mismatch: "
+                f"expected '{expected_agent}', got '{actual_agent}'"
+            )
 
     session_context_path = generated_dir / "session-context.md"
     session_sections: list[dict[str, Any]] = []
@@ -122,19 +154,13 @@ def validate_project(project_root: Path) -> ValidationResult:
     orchestrator_manifest = manifests.get("orchestrator")
 
     if implementation_manifest:
-        for rel_path in _as_list(implementation_manifest.get("evidence_paths")):
-            if not (project_root / rel_path).exists():
-                findings.append(f"implementation evidence path missing: {rel_path}")
+        _check_evidence_paths("implementation", implementation_manifest, project_root, findings, build_findings)
 
     if review_manifest:
-        for rel_path in _as_list(review_manifest.get("evidence_paths")):
-            if not (project_root / rel_path).exists():
-                findings.append(f"review evidence path missing: {rel_path}")
+        _check_evidence_paths("review", review_manifest, project_root, findings, build_findings)
 
     if orchestrator_manifest:
-        for rel_path in _as_list(orchestrator_manifest.get("evidence_paths")):
-            if not (project_root / rel_path).exists():
-                findings.append(f"orchestrator evidence path missing: {rel_path}")
+        _check_evidence_paths("orchestrator", orchestrator_manifest, project_root, findings, build_findings)
 
     review_result = ""
     if review_manifest:
@@ -158,6 +184,9 @@ def validate_project(project_root: Path) -> ValidationResult:
             if scope_blockers != 0:
                 findings.append("DONE_WITH_CONCERNS requires SCOPE_BLOCKER count to be 0")
 
+    if check_build_evidence:
+        findings.extend(build_findings)
+
     summary = {
         "pipeline_id": pipeline_ids[0] if pipeline_ids else "",
         "run_mode": run_modes[0] if run_modes else "",
@@ -165,5 +194,9 @@ def validate_project(project_root: Path) -> ValidationResult:
         "worker_sequence": worker_sequence,
         "session_updates": len(session_sections),
     }
-    return ValidationResult(ok=not findings, findings=findings, summary=summary)
-
+    return ValidationResult(
+        ok=not findings,
+        findings=findings,
+        build_findings=build_findings,
+        summary=summary,
+    )

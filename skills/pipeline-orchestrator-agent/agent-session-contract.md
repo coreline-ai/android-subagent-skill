@@ -21,15 +21,15 @@
 
 1. `pipeline-orchestrator`
 2. `document-review`
-3. `guide-generator`
+3. `guide-generation`
 4. `implementation`
 5. `review`
 
 각 Agent는 자신의 upstream/downstream을 이 순서 기준으로 해석해야 한다.
 
 - `pipeline-orchestrator`는 유일한 시작점이며, 각 단계 종료 후 다음 worker를 dispatch 한다.
-- `document-review`의 다음 worker 단계는 `guide-generator`
-- `guide-generator`의 다음 worker 단계는 `implementation`
+- `document-review`의 다음 worker 단계는 `guide-generation`
+- `guide-generation`의 다음 worker 단계는 `implementation`
 - `implementation`의 다음 worker 단계는 `review`
 - `review`에서 `Rejected`가 발생하면 orchestrator가 `implementation`으로 되돌리고, 이후 `implementation -> review` worker 루프를 최대 3회 반복한다.
 

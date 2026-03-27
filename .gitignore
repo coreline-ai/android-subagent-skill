@@ -16,3 +16,7 @@ captures/
 # Python
 __pycache__/
 *.pyc
+
+# Test generated projects
+test-folder/
+test-folder2/

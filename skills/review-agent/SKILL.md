@@ -20,7 +20,7 @@ description: "[Android App Development] 리뷰 전담 Agent가 설계 의도 문
 *   따라서 `skill-pipeline-validation` 모드에서는, Handoff Manifest에 명시된 검증 범위를 넘어선 제품 전체 미구현만으로는 자동 Reject 하지 않습니다.
 
 ## 🔁 파이프라인 위치 (Pipeline Position)
-이 Agent는 표준 순서 `pipeline-orchestrator -> document-review -> guide-generator -> implementation -> review`에서 **네 번째 worker 단계**입니다.
+이 Agent는 표준 순서 `pipeline-orchestrator -> document-review -> guide-generation -> implementation -> review`에서 **네 번째 worker 단계**입니다.
 
 *   **upstream:** `pipeline-orchestrator`가 `handoff-manifest`를 읽고 dispatch
 *   **downstream:** 종료 또는 `implementation` 재진입 루프를 결정하는 주체는 `pipeline-orchestrator`
@@ -28,7 +28,7 @@ description: "[Android App Development] 리뷰 전담 Agent가 설계 의도 문
 
 ## 🔗 공통 세션 전달 규약 (Shared Session Transfer Contract)
 이 Agent는 리뷰 시작 전 `docs/generated/session-context.md`를 읽고, 리뷰 종료 후 동일 파일에 이번 판정을 append 해야 합니다.
-세부 필드와 루프 원칙은 프로젝트 루트의 `agent-session-contract.md`를 기준으로 맞춥니다.
+세부 필드와 루프 원칙은 `skills/pipeline-orchestrator-agent/agent-session-contract.md`를 기준으로 맞춥니다.
 
 *   **필수 읽기:** 가장 최근 `docs/generated/orchestrator-handoff.md`, `session-context.md`, 가장 최근 `handoff-manifest.md`, 필요 시 이전 `review-handoff-manifest.md`
 *   **필수 쓰기:** `session_id`, `parent_session_id`, `review_cycle`, `previous_handoff`, 분류된 이슈 목록 요약, 다음 루프에서 반드시 해결해야 하는 이슈 목록, 증거 경로
@@ -125,6 +125,8 @@ description: "[Android App Development] 리뷰 전담 Agent가 설계 의도 문
 - **session_context_path:** `docs/generated/session-context.md`
 - **previous_handoff:** `docs/generated/handoff-manifest.md`
 - **review_result:** Approved / DONE_WITH_CONCERNS / Rejected (N차 리뷰)
+- **in_scope:** [이번 리뷰가 검증한 범위]
+- **out_of_scope:** [이번 리뷰에서 제외한 범위]
 - **verified_files:** [파일 경로 리스트]
 - **issue_counts:** Critical: N / Warning: N / Info: N
 - **decision_summary:** [이번 리뷰 판정 핵심 이유]
@@ -133,7 +135,7 @@ description: "[Android App Development] 리뷰 전담 Agent가 설계 의도 문
   - `SCOPE_BLOCKER`: N건
   - `DECLARED_GAP`: N건
   - `FOLLOW_UP`: N건
-- **next_loop_required_actions:** [`CONTEXT_BREAK` + `SCOPE_BLOCKER` 목록]
+- **next_agent_required_actions:** [`CONTEXT_BREAK` + `SCOPE_BLOCKER` 목록]
 - **evidence_paths:** [리뷰 근거 파일, 테스트 리포트, 로그 경로]
 - **test_coverage_status:** Pass / Fail
 - **security_checklist_status:** Pass / Fail
