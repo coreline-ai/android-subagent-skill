@@ -54,6 +54,7 @@ class ManifestSpec:
     stage: str
     skill_dir: str
     agent_name: str
+    execution_mode: str  # "fork" or "inline" — Claude Code Agent tool 전용. fork는 격리된 서브에이전트 실행.
 
 
 MANIFEST_SPECS = {
@@ -62,6 +63,7 @@ MANIFEST_SPECS = {
         stage="pipeline-orchestrator",
         skill_dir="pipeline-orchestrator-agent",
         agent_name="android-pipeline-orchestrator-agent",
+        execution_mode="inline",
         required_keys=HANDOFF_REQUIRED_KEYS
         + (
             "completed_agent",
@@ -75,6 +77,7 @@ MANIFEST_SPECS = {
         stage="document-review",
         skill_dir="document-reviewer-agent",
         agent_name="android-document-reviewer-agent",
+        execution_mode="fork",
         required_keys=HANDOFF_REQUIRED_KEYS
         + (
             "completed_agent",
@@ -90,6 +93,7 @@ MANIFEST_SPECS = {
         stage="guide-generation",
         skill_dir="code-quality-guide-generator",
         agent_name="android-code-quality-guide-generator",
+        execution_mode="fork",
         required_keys=HANDOFF_REQUIRED_KEYS
         + (
             "completed_agent",
@@ -103,6 +107,7 @@ MANIFEST_SPECS = {
         stage="implementation",
         skill_dir="implementation-agent",
         agent_name="android-implementation-agent",
+        execution_mode="inline",
         required_keys=HANDOFF_REQUIRED_KEYS
         + (
             "completed_agent",
@@ -121,6 +126,7 @@ MANIFEST_SPECS = {
         stage="review",
         skill_dir="review-agent",
         agent_name="android-review-agent",
+        execution_mode="inline",
         required_keys=HANDOFF_REQUIRED_KEYS
         + (
             "completed_agent",
@@ -145,4 +151,6 @@ STAGE_TO_HANDOFF = {
 STAGE_TO_SKILL_DIR = {spec.stage: spec.skill_dir for spec in MANIFEST_SPECS.values()}
 
 STAGE_TO_AGENT_NAME = {spec.stage: spec.agent_name for spec in MANIFEST_SPECS.values()}
+
+STAGE_TO_EXECUTION_MODE = {spec.stage: spec.execution_mode for spec in MANIFEST_SPECS.values()}
 

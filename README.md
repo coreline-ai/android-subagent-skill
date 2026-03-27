@@ -8,9 +8,12 @@
   <img src="https://img.shields.io/badge/status-active-1f883d?style=for-the-badge" alt="Status: Active" />
   <img src="https://img.shields.io/badge/mode-project--delivery%20%7C%20skill--pipeline--validation-0969da?style=for-the-badge" alt="Modes" />
   <img src="https://img.shields.io/badge/platform-Android%20%2B%20NDK-ff6b35?style=for-the-badge" alt="Platform: Android + NDK" />
+  <img src="https://img.shields.io/badge/runtime-Claude%20Code-6e44ff?style=for-the-badge" alt="Runtime: Claude Code" />
 </p>
 
-`android-subagent-skill` is a lightweight agent workflow base for Android projects.
+> **Platform:** 이 파이프라인은 **Claude Code** 전용입니다. `context: fork` (서브에이전트 격리), Hook (사전 조건 검증), Agent tool (fork 실행) 등 Claude Code 런타임 기능에 의존합니다.
+
+`android-subagent-skill` is a Claude Code skill-based agent workflow for Android projects.
 It defines how specialized agents share context, hand off work, loop on review, and validate the pipeline with a minimal local harness.
 
 ## 💡 Why this exists
@@ -34,14 +37,16 @@ This repository fixes that by making the contract explicit:
 
 > `pipeline-orchestrator` → `document-review` → `guide-generation` → `implementation` → `review`
 
-| # | Stage | Direction | Condition |
-| :---: | --- | :---: | --- |
-| 1 | `pipeline-orchestrator` | ➡️ | Always starts here — dispatches first worker |
-| 2 | `document-review` | ➡️ | Normalize PRD/TRD for downstream |
-| 3 | `guide-generation` | ➡️ | Produce design intent + quality rubric |
-| 4 | `implementation` | ➡️ | Write code and tests |
-| 5 | `review` | ✅ / 🔄 | `APPROVED` or `DONE_WITH_CONCERNS` → **stop** |
-| | | | `REJECTED` → **back to step 4** (max 3 cycles) |
+| # | Stage | Execution | Direction | Condition |
+| :---: | --- | :---: | :---: | --- |
+| 1 | `pipeline-orchestrator` | `inline` | ➡️ | Always starts here — dispatches first worker |
+| 2 | `document-review` | `fork`* | ➡️ | Normalize PRD/TRD for downstream |
+| 3 | `guide-generation` | `fork`* | ➡️ | Produce design intent + quality rubric |
+| 4 | `implementation` | `inline` | ➡️ | Write code and tests |
+| 5 | `review` | `inline` | ✅ / 🔄 | `APPROVED` or `DONE_WITH_CONCERNS` → **stop** |
+| | | | | `REJECTED` → **back to step 4** (max 3 cycles) |
+
+> *`fork` = Claude Code Agent tool로 격리된 서브에이전트 실행. `context: fork` frontmatter 선언 필요.
 
 ### 📏 Core loop rules
 
@@ -49,6 +54,30 @@ This repository fixes that by making the contract explicit:
 - orchestrator allows up to **3 automatic review loops**
 - `skill-pipeline-validation` does not fail only because the full PRD is not implemented
 - `DONE_WITH_CONCERNS` requires `CONTEXT_BREAK = 0` and `SCOPE_BLOCKER = 0`
+
+## 🏗️ Hybrid execution architecture (Claude Code)
+
+Skills run in two execution modes based on their `context` frontmatter declaration. This architecture requires **Claude Code**'s Agent tool and subagent infrastructure:
+
+| Mode | Behavior | Context access |
+| --- | --- | --- |
+| `fork` | Isolated subagent context | Handoff files only. No conversation history. Summary returned to main |
+| `inline` | Main conversation | Full access to prior agents' reasoning and code decisions |
+
+```
+orchestrator (main conversation)
+  ├── document-review (fork) ──→ summary returned
+  ├── guide-generation (fork) ──→ summary returned
+  ├── implementation (inline) ──→ full reasoning accumulated
+  └── review (inline) ──→ sees implementation context directly
+        ├── APPROVED / DONE_WITH_CONCERNS → stop
+        └── REJECTED → implementation (inline) → review (inline) → loop
+```
+
+**Why this split:**
+- Early stages (`document-review`, `guide-generation`) only need input documents — forking saves context window
+- `implementation` and `review` share the main conversation so the review loop converges without context loss
+- Claude Code의 서브에이전트는 다른 서브에이전트를 생성할 수 없으므로, orchestrator는 반드시 inline 실행
 
 ## ⚙️ Operating modes
 
@@ -65,13 +94,13 @@ Every skill supports two modes, declared in its `SKILL.md` frontmatter:
 
 The pipeline uses three naming systems. The canonical mapping lives in [`agent_registry.py`](./harness/agent_registry.py) and is used by the validation harness to verify `completed_agent` in every handoff manifest.
 
-| Stage name | Skill folder | Agent name (`completed_agent`) |
-| --- | --- | --- |
-| `pipeline-orchestrator` | `pipeline-orchestrator-agent` | `android-pipeline-orchestrator-agent` |
-| `document-review` | `document-reviewer-agent` | `android-document-reviewer-agent` |
-| `guide-generation` | `code-quality-guide-generator` | `android-code-quality-guide-generator` |
-| `implementation` | `implementation-agent` | `android-implementation-agent` |
-| `review` | `review-agent` | `android-review-agent` |
+| Stage name | Skill folder | Agent name (`completed_agent`) | Execution mode |
+| --- | --- | --- | :---: |
+| `pipeline-orchestrator` | `pipeline-orchestrator-agent` | `android-pipeline-orchestrator-agent` | `inline` |
+| `document-review` | `document-reviewer-agent` | `android-document-reviewer-agent` | `fork` |
+| `guide-generation` | `code-quality-guide-generator` | `android-code-quality-guide-generator` | `fork` |
+| `implementation` | `implementation-agent` | `android-implementation-agent` | `inline` |
+| `review` | `review-agent` | `android-review-agent` | `inline` |
 
 ### 🎛️ pipeline-orchestrator-agent
 
@@ -284,6 +313,7 @@ The harness is intentionally small — it validates skill contracts, not applica
 | Component | Status |
 | --- | :---: |
 | 5-stage orchestrator-based workflow | ✅ |
+| Hybrid execution (fork + inline) | ✅ |
 | Canonical manifest keys with 3-way naming registry | ✅ |
 | Validation harness with `completed_agent` verification | ✅ |
 | Shared session contract | ✅ |

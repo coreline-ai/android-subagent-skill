@@ -1,6 +1,7 @@
 ---
 name: android-code-quality-guide-generator
-description: "[Android App Development] sub-agent가 안드로이드 앱의 PRD, TRD 등을 분석하여 안드로이드 아키텍처(Kotlin/NDK) 기반 설계 의도 문서(design-intent.md)와 코드 품질 평가 기준(code-quality-guide.md)을 수립하도록 안내하는 안드로이드 전용 스킬입니다."
+description: "[Android App Development] [Claude Code] sub-agent가 안드로이드 앱의 PRD, TRD 등을 분석하여 안드로이드 아키텍처(Kotlin/NDK) 기반 설계 의도 문서(design-intent.md)와 코드 품질 평가 기준(code-quality-guide.md)을 수립하도록 안내하는 안드로이드 전용 스킬입니다."
+context: fork
 ---
 
 # Android Code Quality Guide Generator Skill
@@ -62,17 +63,22 @@ description: "[Android App Development] sub-agent가 안드로이드 앱의 PRD,
 ### 4단계: 세션 컨텍스트 갱신 및 선택적 스냅샷 기록 (Session Update) 🔗
 `docs/generated/session-context.md`를 **반드시 갱신**하여 자신의 판단을 누적 기록합니다.
 
+> **⚠️ CRITICAL:** 아래 템플릿의 **모든 키(16개)는 필수**입니다. 하나라도 누락되면 파이프라인 검증이 실패합니다. 섹션 제목은 반드시 `## Session Update - Guide Generation` 형식(h2 + "Session Update -" 접두사)을 사용해야 합니다.
+
 ```markdown
-### Session Update - Guide Generator
+## Session Update - Guide Generation
+- **pipeline_id:** [프로젝트 또는 실행 단위 식별자]
+- **run_mode:** `project-delivery` | `skill-pipeline-validation`
 - **current_stage:** `guide-generation`
+- **review_cycle:** [현재 값]
 - **session_id:** `guide-gen-001`
-- **parent_session_id:** [document-review session_id]
+- **parent_session_id:** [orchestrator session_id]
 - **previous_handoff:** `docs/generated/document-reviewer-handoff.md`
 - **latest_handoff:** `docs/generated/guide-generator-handoff.md`
-- **generated_artifacts:**
-  - `docs/generated/design-intent.md`
-  - `docs/generated/code-quality-guide.md`
+- **in_scope:** [이번 실행 범위]
+- **out_of_scope:** [이번 실행에서 제외한 범위]
 - **decision_summary:** [설계 의도와 품질 기준의 핵심 생성 판단]
+- **resolved_issues:** [없으면 "없음"]
 - **unresolved_issues:** [없으면 "없음"]
 - **next_agent_focus:** [implementation-agent가 구현 시 주의할 범위]
 - **evidence_paths:** [`docs/generated/design-intent.md`, `docs/generated/code-quality-guide.md`]
@@ -95,6 +101,9 @@ description: "[Android App Development] sub-agent가 안드로이드 앱의 PRD,
 *   실제 다음 dispatch는 `pipeline-orchestrator-agent`가 수행하며, orchestrator가 이후 worker인 `implementation-agent`를 시작할 수 있게 handoff를 남깁니다.
 
 ## 📦 Handoff Manifest (구현 Agent로 인계 시 필수 포맷)
+
+> **⚠️ CRITICAL:** 아래 템플릿의 **모든 키(16개)는 필수**입니다. 특히 `completed_agent`, `generated_artifacts`, `next_agent_context`를 절대 누락하지 마세요. 하나라도 빠지면 파이프라인 검증이 실패합니다.
+
 ```markdown
 ## Handoff Manifest
 - **completed_agent:** android-code-quality-guide-generator

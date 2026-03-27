@@ -1,6 +1,6 @@
 ---
 name: android-implementation-agent
-description: "[Android App Development] 구현 전담 Agent가 PRD, TRD, code-quality-guide.md를 바탕으로 안드로이드 프레임워크와 NDK 기반의 실제 앱 코드 및 테스트 코드를 안전하게 구현하도록 안내하는 스킬입니다."
+description: "[Android App Development] [Claude Code] 구현 전담 Agent가 PRD, TRD, code-quality-guide.md를 바탕으로 안드로이드 프레임워크와 NDK 기반의 실제 앱 코드 및 테스트 코드를 안전하게 구현하도록 안내하는 스킬입니다."
 ---
 
 # Android Implementation Agent Skill (안드로이드 구현 전담 에이전트)
@@ -21,6 +21,7 @@ description: "[Android App Development] 구현 전담 Agent가 PRD, TRD, code-qu
 
 *   **upstream:** `pipeline-orchestrator`가 `guide-generator-handoff` 또는 `review-handoff-manifest`를 읽고 dispatch
 *   **downstream:** worker 관점에서 다음 단계는 `review`이지만, 실제 dispatch 결정은 `pipeline-orchestrator`가 수행
+*   **실행 모드:** `inline` — 메인 대화에서 실행됩니다. review 에이전트가 구현 과정의 사고 맥락을 직접 참조할 수 있도록 대화 컨텍스트에 누적됩니다. reject 재진입 시에도 review의 피드백을 메인 대화에서 직접 참조합니다.
 *   **시작 조건:** `docs/generated/guide-generator-handoff.md`가 존재하거나, `docs/generated/review-handoff-manifest.md`에 `Rejected`가 기록되어 orchestrator가 재구현 루프를 시작할 때 시작
 
 ## 🔗 공통 세션 전달 규약 (Shared Session Transfer Contract)
@@ -74,23 +75,27 @@ description: "[Android App Development] 구현 전담 Agent가 PRD, TRD, code-qu
 ### 4단계: 선택적 컨텍스트 스냅샷 기록 (Optional Context Snapshot Append) 🔗
 `docs/generated/session-context.md`를 **반드시 갱신**하여 이번 구현 세션의 범위와 결과를 기록합니다.
 
+> **⚠️ CRITICAL:** 아래 템플릿의 **모든 키(16개)는 필수**입니다. 하나라도 누락되면 파이프라인 검증이 실패합니다. 섹션 제목은 반드시 `## Session Update - Implementation` 형식(h2 + "Session Update -" 접두사)을 사용해야 합니다.
+
 ```markdown
-### Session Update - Implementation
+## Session Update - Implementation
+- **pipeline_id:** [프로젝트 또는 실행 단위 식별자]
+- **run_mode:** `project-delivery` | `skill-pipeline-validation`
 - **current_stage:** `implementation`
+- **review_cycle:** [현재 루프 번호]
 - **session_id:** `impl-00N`
 - **parent_session_id:** [직전 session_id]
-- **review_cycle:** [현재 루프 번호]
 - **previous_handoff:** [`docs/generated/guide-generator-handoff.md` 또는 `docs/generated/review-handoff-manifest.md`]
-- **implemented_scope:** [이번 루프에서 실제로 구현한 범위]
-- **declared_gaps:** [의도적으로 미구현한 범위]
-- **decision_summary:** [왜 이 범위를 구현했고 어떤 판단으로 제외했는지]
-- **resolved_issues:**
-  - `CONTEXT_BREAK`: [없으면 "없음"]
-  - `SCOPE_BLOCKER`: [없으면 "없음"]
-- **remaining_issues:** [없으면 "없음"]
 - **latest_handoff:** `docs/generated/handoff-manifest.md`
+- **in_scope:** [이번 실행 범위]
+- **out_of_scope:** [이번 실행에서 제외한 범위]
+- **decision_summary:** [왜 이 범위를 구현했고 어떤 판단으로 제외했는지]
+- **resolved_issues:** [없으면 "없음"]
+- **unresolved_issues:** [없으면 "없음"]
 - **next_agent_focus:** [review-agent가 확인해야 할 포인트]
-- **evidence_paths:** [빌드/테스트 로그, 핵심 구현 파일 경로]
+- **evidence_paths:**
+  - [빌드/테스트 로그 경로]
+  - [핵심 구현 파일 경로]
 - **carry_forward_rules:** [`CONTEXT_BREAK`와 `SCOPE_BLOCKER`만 다음 루프 필수 수정 대상으로 승격]
 ```
 
@@ -113,6 +118,9 @@ description: "[Android App Development] 구현 전담 Agent가 PRD, TRD, code-qu
 
 ## 📦 Handoff Manifest (리뷰 Agent로 인계 시 필수 포맷)
 구현 완료 후, 아래 형식의 `handoff-manifest.md`를 프로젝트 `docs/generated/` 경로에 생성하여 리뷰 Agent가 즉시 리뷰에 착수할 수 있도록 합니다.
+
+> **⚠️ CRITICAL:** 아래 템플릿의 **모든 키(21개)는 필수**입니다. 특히 `completed_agent`, `implemented_scope`, `declared_gaps`, `changed_files`, `test_results`, `test_coverage`, `resolved_issue_counts`를 절대 누락하지 마세요. 하나라도 빠지면 파이프라인 검증이 실패합니다.
+
 ```markdown
 ## Handoff Manifest
 - **completed_agent:** android-implementation-agent
@@ -139,7 +147,8 @@ description: "[Android App Development] 구현 전담 Agent가 PRD, TRD, code-qu
   - `SCOPE_BLOCKER`: N건
   - `DECLARED_GAP`: N건
   - `FOLLOW_UP`: N건
-- **evidence_paths:** [성공한 명령, 테스트 리포트, APK/로그 경로]
+- **evidence_paths:**
+  - [성공한 명령, 테스트 리포트, APK/로그 경로]
 - **next_agent_context:** [구현 요약]
 - **next_agent_required_actions:** [review-agent가 재검증해야 할 `CONTEXT_BREAK`/`SCOPE_BLOCKER` 해결 항목]
 - **unresolved_issues:** [내용]

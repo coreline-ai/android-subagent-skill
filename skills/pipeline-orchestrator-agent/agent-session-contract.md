@@ -94,3 +94,25 @@
 ## 운영 모드 해석
 - `project-delivery`: PRD/TRD 기준의 실제 제품 구현과 품질 완결성을 목표로 한다.
 - `skill-pipeline-validation`: 파이프라인 계약, 문맥 전달, representative path, 빌드/테스트 증거를 검증한다. 전체 PRD 미구현만으로 자동 실패시키지 않는다.
+
+## 실행 모드 (Execution Mode) — Claude Code 전용
+각 worker 스킬은 SKILL.md frontmatter의 `context` 필드에 따라 두 가지 실행 모드 중 하나로 동작한다. 이 선언은 정적이며 런타임에 동적으로 전환되지 않는다. `fork`/`inline` 실행 모드 구분은 **Claude Code의 Agent tool과 서브에이전트 인프라**에서만 적용된다.
+
+### 허용 값
+- `fork`: 격리된 서브에이전트 컨텍스트에서 실행한다. 메인 대화의 기록에 접근하지 않으며, handoff 파일과 SKILL.md만을 입력으로 받는다. 완료 시 요약만 메인 대화로 반환된다.
+- `inline` (기본값): 메인 대화에서 실행한다. 이전 에이전트의 전체 사고 과정과 코드 결정에 접근 가능하다.
+
+### 단계별 실행 모드
+
+| 단계 | execution_mode | 근거 |
+| --- | --- | --- |
+| `pipeline-orchestrator` | `inline` | 메인 대화의 진입점이자 제어 주체 |
+| `document-review` | `fork` | PRD/TRD 파일 기반 작업. 이전 대화 맥락 불필요 |
+| `guide-generation` | `fork` | document-reviewer handoff 파일 기반. 이전 대화 맥락 불필요 |
+| `implementation` | `inline` | review가 구현 과정을 참조해야 하므로 메인 대화에 누적 |
+| `review` | `inline` | implementation의 사고 과정을 직접 참조하여 리뷰 |
+
+### 설계 근거
+- `document-review`와 `guide-generation`은 입력 문서만으로 충분히 동작하므로, fork로 격리하여 메인 대화의 컨텍스트 윈도우를 절약한다.
+- `implementation`과 `review`는 메인 대화에서 실행하여 implementation ↔ review 루프에서 맥락 손실 없이 품질을 수렴시킨다.
+- Claude Code의 서브에이전트는 다른 서브에이전트를 생성할 수 없으므로, orchestrator는 반드시 메인 대화에서 실행해야 한다.

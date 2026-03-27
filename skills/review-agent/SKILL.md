@@ -1,6 +1,6 @@
 ---
 name: android-review-agent
-description: "[Android App Development] 리뷰 전담 Agent가 설계 의도 문서(design-intent.md)와 품질 가이드(code-quality-guide.md)를 통해 구현된 안드로이드 및 NDK 코드를 엄격히 리뷰하도록 안내하는 스킬입니다."
+description: "[Android App Development] [Claude Code] 리뷰 전담 Agent가 설계 의도 문서(design-intent.md)와 품질 가이드(code-quality-guide.md)를 통해 구현된 안드로이드 및 NDK 코드를 엄격히 리뷰하도록 안내하는 스킬입니다."
 ---
 
 # Android Review Agent Skill (안드로이드 리뷰 전담 에이전트)
@@ -24,6 +24,7 @@ description: "[Android App Development] 리뷰 전담 Agent가 설계 의도 문
 
 *   **upstream:** `pipeline-orchestrator`가 `handoff-manifest`를 읽고 dispatch
 *   **downstream:** 종료 또는 `implementation` 재진입 루프를 결정하는 주체는 `pipeline-orchestrator`
+*   **실행 모드:** `inline` — 메인 대화에서 실행됩니다. implementation 에이전트의 전체 사고 과정(코드 결정 근거, 파일 변경 이유, 테스트 판단)을 메인 대화 컨텍스트에서 직접 참조하여 리뷰합니다. handoff manifest 요약만 읽는 것보다 높은 리뷰 품질을 확보합니다.
 *   **시작 조건:** `docs/generated/handoff-manifest.md`가 존재하고 orchestrator가 리뷰 단계가 필요하다고 판단했을 때 시작
 
 ## 🔗 공통 세션 전달 규약 (Shared Session Transfer Contract)
@@ -82,23 +83,27 @@ description: "[Android App Development] 리뷰 전담 Agent가 설계 의도 문
 *   발견된 문제점과 수정 권장 사항을 포함한 리뷰 리포트를 마크다운으로 작성합니다.
 *   `docs/generated/session-context.md`에 아래 형태로 이번 판정을 append 하여 다음 구현 Agent가 동일 세션 체인을 이어받게 합니다.
 
+> **⚠️ CRITICAL:** 아래 템플릿의 **모든 키(16개)는 필수**입니다. 하나라도 누락되면 파이프라인 검증이 실패합니다. 섹션 제목은 반드시 `## Session Update - Review` 형식(h2 + "Session Update -" 접두사)을 사용해야 합니다.
+
 ```markdown
-### Session Update - Review
+## Session Update - Review
+- **pipeline_id:** [프로젝트 또는 실행 단위 식별자]
+- **run_mode:** `project-delivery` | `skill-pipeline-validation`
 - **current_stage:** `review`
+- **review_cycle:** [현재 루프 번호]
 - **session_id:** `review-00N`
 - **parent_session_id:** [직전 implementation session_id]
-- **review_cycle:** [현재 루프 번호]
 - **previous_handoff:** `docs/generated/handoff-manifest.md`
+- **latest_handoff:** `docs/generated/review-handoff-manifest.md`
+- **in_scope:** [이번 리뷰가 검증한 범위]
+- **out_of_scope:** [이번 리뷰에서 제외한 범위]
 - **decision_summary:** [이번 리뷰 판정과 핵심 이유]
 - **resolved_issues:** [없으면 "없음"]
-- **unresolved_issues:**
-  - `CONTEXT_BREAK`: [없으면 "없음"]
-  - `SCOPE_BLOCKER`: [없으면 "없음"]
-  - `DECLARED_GAP`: [없으면 "없음"]
-  - `FOLLOW_UP`: [없으면 "없음"]
-- **latest_handoff:** `docs/generated/review-handoff-manifest.md`
+- **unresolved_issues:** [없으면 "없음"]
 - **next_agent_focus:** [다음 구현 루프가 우선 해결할 항목]
-- **evidence_paths:** [리뷰 근거 파일, 테스트 리포트, 로그 경로]
+- **evidence_paths:**
+  - [리뷰 근거 파일]
+  - [테스트 리포트, 로그 경로]
 - **carry_forward_rules:** [`CONTEXT_BREAK`와 `SCOPE_BLOCKER`만 다음 루프 필수 수정 대상으로 유지]
 ```
 
@@ -114,6 +119,9 @@ description: "[Android App Development] 리뷰 전담 Agent가 설계 의도 문
 *   3회차 리뷰에서도 `CONTEXT_BREAK` 또는 `SCOPE_BLOCKER`가 남아있다면 근본 원인 분석(Root Cause)을 포함한 에스컬레이션 리포트를 사용자에게 제출합니다.
 
 ## 📦 Handoff Manifest (완료 시 출력 포맷)
+
+> **⚠️ CRITICAL:** 아래 템플릿의 **모든 키(20개)는 필수**입니다. 특히 `completed_agent`, `review_result`, `verified_files`, `issue_counts`, `issue_classification_counts`, `test_coverage_status`, `security_checklist_status`를 절대 누락하지 마세요. 하나라도 빠지면 파이프라인 검증이 실패합니다.
+
 ```markdown
 ## Review Handoff Manifest
 - **completed_agent:** android-review-agent
@@ -136,7 +144,8 @@ description: "[Android App Development] 리뷰 전담 Agent가 설계 의도 문
   - `DECLARED_GAP`: N건
   - `FOLLOW_UP`: N건
 - **next_agent_required_actions:** [`CONTEXT_BREAK` + `SCOPE_BLOCKER` 목록]
-- **evidence_paths:** [리뷰 근거 파일, 테스트 리포트, 로그 경로]
+- **evidence_paths:**
+  - [리뷰 근거 파일, 테스트 리포트, 로그 경로]
 - **test_coverage_status:** Pass / Fail
 - **security_checklist_status:** Pass / Fail
 - **unresolved_issues:** [내용 또는 "없음"]

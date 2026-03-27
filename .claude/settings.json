@@ -1,0 +1,72 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m unittest discover -s harness/tests -v)",
+      "Bash(python3 -m harness.run_validation --project test-folder)",
+      "Bash(python3 -m harness.run_validation --project test-folder --check-build-evidence)",
+      "Bash(ls -la /Users/hwan/project/android-subagent-skill/*.md)",
+      "Bash(git mv:*)",
+      "Bash(ls /Users/hwan/project/android-subagent-skill/*.md)",
+      "Bash(python3 -m harness.run_validation --project test-folder2)",
+      "Bash(cat:*)",
+      "Read(//tmp/**)",
+      "Bash(/tmp/comparison.txt:*)",
+      "Bash(git rm:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(curl -sL \"https://code.claude.com/docs/ko/sub-agents\")",
+      "Bash(curl -sL \"https://code.claude.com/docs/ko/skills\")",
+      "Bash(curl -sL \"https://code.claude.com/docs/ko/features-overview\")",
+      "Bash(head -5 /Users/hwan/project/android-subagent-skill/skills/*/SKILL.md)",
+      "Bash(python3 -m harness.run_validation --project test-folder3)",
+      "Bash(python3 -m harness.run_validation --project test-folder4)",
+      "Bash(python -m harness.validation test-folder4)",
+      "Bash(python3 -m harness.validation test-folder4)",
+      "Bash(python3 -c \":*)",
+      "Bash(for d:*)",
+      "Bash(do)",
+      "Bash(echo \"=== $d ===\")",
+      "Bash(done)",
+      "Bash(python3 -m pytest harness/tests/ -v)",
+      "Bash(python3 -m harness.run_validation --project test-folder5)",
+      "Bash(grep -r \"remaining_issues\\\\|unresolved_issues\" /Users/hwan/project/android-subagent-skill --include=*.md --include=*.py)",
+      "Bash(grep -E \"^#{1,4} \" /Users/hwan/project/android-subagent-skill/test-folder/docs/generated/session-context.md)",
+      "Bash(grep -E \"^#{1,4} \" /Users/hwan/project/android-subagent-skill/test-folder3/docs/generated/session-context.md)",
+      "Bash(chmod +x /Users/hwan/project/android-subagent-skill/.claude/hooks/check-pipeline-docs.sh)",
+      "Bash(CLAUDE_PROJECT_DIR=/Users/hwan/project/android-subagent-skill/test-folder6 echo '{}')",
+      "Bash(/Users/hwan/project/android-subagent-skill/.claude/hooks/check-pipeline-docs.sh)",
+      "Bash(echo \"exit_code=$?\")",
+      "Bash(CLAUDE_PROJECT_DIR=/Users/hwan/project/android-subagent-skill/test-folder6 /Users/hwan/project/android-subagent-skill/.claude/hooks/check-pipeline-docs.sh)",
+      "Bash(echo EXIT=$?)",
+      "Bash(CLAUDE_PROJECT_DIR=/Users/hwan/project/android-subagent-skill/test-folder6 bash /Users/hwan/project/android-subagent-skill/.claude/hooks/check-pipeline-docs.sh)",
+      "Bash(echo $?)",
+      "Bash(echo EXIT_CODE=$?)",
+      "Bash(CLAUDE_PROJECT_DIR=/Users/hwan/project/android-subagent-skill/test-folder6 bash -c 'echo \"\"{}\"\" | bash /Users/hwan/project/android-subagent-skill/.claude/hooks/check-pipeline-docs.sh 2>/dev/null')",
+      "Bash(echo \"RC=$?\")",
+      "Bash(SRC=/Users/hwan/project/android-subagent-skill/test-folder5/app/src)",
+      "Bash(DST=/Users/hwan/project/android-subagent-skill/test-folder6/app/src)",
+      "Bash(cp \"$SRC/main/java/com/example/fileanalyzer/domain/FileNode.kt\" \"$DST/main/java/com/example/fileanalyzer/domain/\")",
+      "Bash(cp \"$SRC/main/java/com/example/fileanalyzer/domain/FileCategory.kt\" \"$DST/main/java/com/example/fileanalyzer/domain/\")",
+      "Bash(cp \"$SRC/main/java/com/example/fileanalyzer/domain/ScanDirectoryUseCase.kt\" \"$DST/main/java/com/example/fileanalyzer/domain/\")",
+      "Bash(python3 -m harness.run_validation --project test-folder6)"
+    ],
+    "additionalDirectories": [
+      "/tmp",
+      "/Users/hwan/project/android-subagent-skill/.claude"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/check-pipeline-docs.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
