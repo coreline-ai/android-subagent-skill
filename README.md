@@ -11,6 +11,8 @@
   <img src="https://img.shields.io/badge/runtime-Claude%20Code-6e44ff?style=for-the-badge" alt="Runtime: Claude Code" />
 </p>
 
+<img width="1156" height="628" alt="image" src="https://github.com/user-attachments/assets/9e7dbc96-f1cc-4118-ad24-446d61d606f2" />
+
 > **Platform:** 이 파이프라인은 **Claude Code** 전용입니다. `context: fork` (서브에이전트 격리), Hook (사전 조건 검증), Agent tool (fork 실행) 등 Claude Code 런타임 기능에 의존합니다.
 
 `android-subagent-skill` is a Claude Code skill-based agent workflow for Android projects.
