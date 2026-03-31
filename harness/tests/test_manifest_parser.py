@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import tempfile
 import unittest
+from pathlib import Path
 
 from harness.manifest_parser import parse_markdown_bullets, parse_session_context
 
@@ -10,25 +12,25 @@ class ManifestParserTest(unittest.TestCase):
         text = """
 ## Handoff Manifest
 - **completed_agent:** android-review-agent
-- **review_result:** DONE_WITH_CONCERNS (1차 리뷰)
+- **review_result:** DONE_WITH_CONCERNS (review 1)
 - **verified_files:**
   - `docs/generated/session-context.md`
   - `docs/generated/handoff-manifest.md`
 - **issue_classification_counts:**
-  - `CONTEXT_BREAK`: 0건
-  - `SCOPE_BLOCKER`: 0건
+  - `CONTEXT_BREAK`: 0
+  - `SCOPE_BLOCKER`: 0
 """
         parsed = parse_markdown_bullets(text)
 
         self.assertEqual(parsed["completed_agent"], "android-review-agent")
-        self.assertEqual(parsed["review_result"], "DONE_WITH_CONCERNS (1차 리뷰)")
+        self.assertEqual(parsed["review_result"], "DONE_WITH_CONCERNS (review 1)")
         self.assertEqual(
             parsed["verified_files"],
             ["docs/generated/session-context.md", "docs/generated/handoff-manifest.md"],
         )
         self.assertEqual(
             parsed["issue_classification_counts"],
-            {"CONTEXT_BREAK": "0건", "SCOPE_BLOCKER": "0건"},
+            {"CONTEXT_BREAK": "0", "SCOPE_BLOCKER": "0"},
         )
 
     def test_parse_session_context_sections(self) -> None:
@@ -43,11 +45,6 @@ class ManifestParserTest(unittest.TestCase):
 - **current_stage:** `review`
 - **pipeline_id:** `pipe-1`
 """
-        path = None
-        # Reuse the parser contract through a temporary file-like path.
-        from pathlib import Path
-        import tempfile
-
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "session-context.md"
             path.write_text(text, encoding="utf-8")
@@ -60,4 +57,3 @@ class ManifestParserTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

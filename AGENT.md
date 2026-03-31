@@ -239,6 +239,8 @@ python3 -m harness.run_validation --project <디렉토리>
 python3 -m harness.run_validation --project <디렉토리> --check-build-evidence
 ```
 
+`test-folder*` directories are user-created local self-test targets used before applying the skills to a real Android project. They are intentionally excluded from Git.
+
 ### 검증 범위
 
 - 매니페스트 파일 존재 및 필수 키 검증

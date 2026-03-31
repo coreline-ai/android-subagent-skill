@@ -220,8 +220,10 @@ All generated files are written to `docs/generated/`.
 │   ├── validation.py          # contract validation logic
 │   ├── run_validation.py      # CLI entry point
 │   └── tests/
-└── test-folder/               # reference fixture for validation
+└── test-folder/               # user-created local self-test target (not committed)
 ```
+
+`test-folder` is not a bundled sample project. It is a local self-test target that users create before validating the skill pipeline against a real Android project.
 
 ## 📜 Session and handoff contract
 
@@ -280,6 +282,8 @@ It decides:
 ```bash
 python3 -m harness.run_validation --project <your-project-dir>
 ```
+
+For local self-test runs, users commonly validate a git-ignored `test-folder` target before applying the skills to a real Android project.
 
 ## 🧪 Validation harness
 

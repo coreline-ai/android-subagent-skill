@@ -101,7 +101,7 @@ harness는 계약 정합성만 검증합니다:
 ## 주의사항
 
 - 이 프로젝트 자체는 스킬 프레임워크이며, 앱 코드를 포함하지 않음
-- `test-folder*` 디렉토리는 검증용 fixture이며 `.gitignore`에 등록됨
+- `test-folder*` directories are user-created local self-test targets for harness validation and are intentionally ignored by `.gitignore`
 - `fork` / `inline` 실행 모드는 Claude Code의 Agent tool에서만 동작하는 개념
 - SKILL.md 템플릿의 필수 키와 섹션 헤딩 형식은 harness parser와 정확히 일치해야 함
   - 세션 섹션: `## Session Update - {스테이지명}` (h2 필수)
